@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
@@ -9,15 +9,43 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Heart, Star, ShoppingCart, Minus, Plus, ArrowLeft } from "lucide-react"
-import { products } from "@/data/products"
+import { getProductById, getRelatedProduct } from "@/components/api/product" 
+import type { Product } from "@/types/product"
 
 export default function ProductDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const [product, setProduct] = useState<Product | null>(null)
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
   const [quantity, setQuantity] = useState(1)
   const [isFavorite, setIsFavorite] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  const product = products.find((p) => p.id === params.id)
+  useEffect(() => {
+    if (params?.id) {
+      getProductById(params.id as string)
+        .then((data) => setProduct(data))
+        .catch(() => setProduct(null))
+        .finally(() => setLoading(false))
+    }
+  }, [params?.id])
+
+  useEffect(() => {
+    if (params?.id) {
+      getRelatedProduct(params.id as string)
+        .then((data) => setRelatedProducts(data))
+        .catch(() => setRelatedProducts([]))
+        .finally(() => setLoading(false))
+    }
+  }, [params?.id])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-600">Loading...</p>
+      </div>
+    )
+  }
 
   if (!product) {
     return (
@@ -32,8 +60,6 @@ export default function ProductDetailPage() {
     )
   }
 
-  const relatedProducts = products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4)
-
   return (
     <div className="min-h-screen bg-white">
       <Navigation />
@@ -46,9 +72,9 @@ export default function ProductDetailPage() {
             Back to Shop
           </Button>
           <span>/</span>
-          <span>{product.category}</span>
-          <span>/</span>
-          <span className="text-gray-900">{product.name}</span>
+          {/* <span>{product.category}</span> */}
+          {/* <span>/</span> */}
+          <span className="text-gray-900">{product.productName}</span>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
@@ -56,21 +82,10 @@ export default function ProductDetailPage() {
           <div className="space-y-4">
             <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
               <img
-                src={product.image || "/placeholder.svg"}
-                alt={product.name}
+                src={product.productImageUrl || "/placeholder.svg"}
+                alt={product.productName}
                 className="w-full h-full object-cover"
               />
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              {[...Array(4)].map((_, index) => (
-                <div key={index} className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                  <img
-                    src={product.image || "/placeholder.svg"}
-                    alt={`${product.name} ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ))}
             </div>
           </div>
 
@@ -78,9 +93,9 @@ export default function ProductDetailPage() {
           <div className="space-y-6">
             <div>
               <Badge variant="secondary" className="mb-2">
-                {product.category}
+                {product.categoryName}
               </Badge>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.productName}</h1>
               <div className="flex items-center space-x-4 mb-4">
                 <div className="flex items-center">
                   {[...Array(5)].map((_, i) => (
@@ -92,13 +107,10 @@ export default function ProductDetailPage() {
                     />
                   ))}
                 </div>
-                <span className="text-gray-600">({product.reviews} reviews)</span>
+                <span className="text-gray-600">({product.reviews.length} reviews)</span>
               </div>
               <div className="flex items-center space-x-4 mb-6">
                 <span className="text-3xl font-bold text-gray-900">${product.price}</span>
-                {product.originalPrice && (
-                  <span className="text-xl text-gray-500 line-through">${product.originalPrice}</span>
-                )}
               </div>
             </div>
 
@@ -107,7 +119,7 @@ export default function ProductDetailPage() {
 
               <div className="flex items-center space-x-2">
                 <span className="font-medium">Brand:</span>
-                <Badge variant="outline">{product.brand}</Badge>
+                <Badge variant="outline">{product.brandName}</Badge>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -123,8 +135,8 @@ export default function ProductDetailPage() {
 
               <div className="flex items-center space-x-2">
                 <span className="font-medium">Availability:</span>
-                <Badge variant={product.inStock ? "default" : "destructive"}>
-                  {product.inStock ? "In Stock" : "Out of Stock"}
+                <Badge variant={product.availabilityStatus ? "default" : "destructive"}>
+                  {product.availabilityStatus ? "In Stock" : "Out of Stock"}
                 </Badge>
               </div>
             </div>
@@ -150,7 +162,7 @@ export default function ProductDetailPage() {
               </div>
 
               <div className="flex space-x-4">
-                <Button className="flex-1 bg-orange-500 hover:bg-orange-600" disabled={!product.inStock}>
+                <Button className="flex-1 bg-orange-500 hover:bg-orange-600" disabled={!product.availabilityStatus}>
                   <ShoppingCart className="w-4 h-4 mr-2" />
                   Add to Cart
                 </Button>
@@ -170,7 +182,7 @@ export default function ProductDetailPage() {
         <Tabs defaultValue="description" className="mb-16">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="description">Description</TabsTrigger>
-            <TabsTrigger value="reviews">Reviews ({product.reviews})</TabsTrigger>
+            <TabsTrigger value="reviews">Reviews ({product.reviews.length})</TabsTrigger>
             <TabsTrigger value="shipping">Shipping Info</TabsTrigger>
           </TabsList>
           <TabsContent value="description" className="mt-6">
@@ -229,25 +241,25 @@ export default function ProductDetailPage() {
           </TabsContent>
         </Tabs>
 
-        {/* Related Products */}
+        Related Products
         {relatedProducts.length > 0 && (
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-8">Related Products</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {relatedProducts.map((relatedProduct) => (
-                <Card key={relatedProduct.id} className="hover:shadow-lg transition-shadow">
+                <Card key={relatedProduct.productId} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-0">
                     <img
-                      src={relatedProduct.image || "/placeholder.svg"}
-                      alt={relatedProduct.name}
+                      src={relatedProduct.productImageUrl || "/placeholder.svg"}
+                      alt={relatedProduct.productName}
                       className="w-full h-48 object-cover rounded-t-lg"
                     />
                     <div className="p-4">
-                      <h3 className="font-semibold text-lg mb-2">{relatedProduct.name}</h3>
+                      <h3 className="font-semibold text-lg mb-2">{relatedProduct.productName}</h3>
                       <div className="flex items-center justify-between">
                         <span className="text-lg font-bold text-gray-900">${relatedProduct.price}</span>
                         <Button size="sm" variant="outline" asChild>
-                          <a href={`/shop/product/${relatedProduct.id}`}>View</a>
+                          <a href={`/shop/product/${relatedProduct.productId}`}>View</a>
                         </Button>
                       </div>
                     </div>

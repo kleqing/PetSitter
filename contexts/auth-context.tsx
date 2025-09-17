@@ -1,41 +1,62 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import type { User, AuthContextType, RegisterData } from "@/types/user"
+import * as api from "@/components/api/auth"
+import type { User } from "@/types/user"
+import { UserRole } from "@/enum/UserRole"
+
+interface AuthContextType {
+  user: User | null
+  register: (data: any) => Promise<any>
+  login: (email: string, password: string) => Promise<any>
+  loginWithGoogle: () => Promise<void>
+  logout: () => void
+  loading: boolean
+}
+
+const mapRole = (r: number|string): UserRole => {
+  if (r === 2 || r === "2") return UserRole.Shop;
+  return UserRole.User;
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
 
+  // Load user từ localStorage khi app khởi chạy
   useEffect(() => {
-    // Check for existing session
-    const savedUser = localStorage.getItem("user")
-    if (savedUser) {
-      setUser(JSON.parse(savedUser))
+    const storedUser = localStorage.getItem("user")
+    if (storedUser) {
+      setUser(JSON.parse(storedUser))
     }
-    setLoading(false)
   }, [])
+
+  const register = async (data: any) => {
+    setLoading(true)
+    try {
+      const res = await api.register(data)
+      if (res.success && res.data) {
+        setUser(res.data)
+        localStorage.setItem("user", JSON.stringify(res.data))
+      }
+      return res
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const login = async (email: string, password: string) => {
     setLoading(true)
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      const mockUser: User = {
-        id: "1",
-        name: "John Doe",
-        email,
-        role: "user",
-        createdAt: new Date().toISOString(),
+      const res = await api.login(email, password)
+      if (res.success && res.data) {
+        const userData = { ...res.data, role: mapRole(res.data.role) };
+        setUser(userData)
+        localStorage.setItem("user", JSON.stringify(userData))
       }
-
-      setUser(mockUser)
-      localStorage.setItem("user", JSON.stringify(mockUser))
-    } catch (error) {
-      throw new Error("Login failed")
+      return res
     } finally {
       setLoading(false)
     }
@@ -44,46 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginWithGoogle = async () => {
     setLoading(true)
     try {
-      // Simulate Google OAuth
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      const mockUser: User = {
-        id: "2",
-        name: "Google User",
-        email: "user@gmail.com",
-        role: "user",
-        createdAt: new Date().toISOString(),
-      }
-
-      setUser(mockUser)
-      localStorage.setItem("user", JSON.stringify(mockUser))
-    } catch (error) {
-      throw new Error("Google login failed")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const register = async (userData: RegisterData) => {
-    setLoading(true)
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      const newUser: User = {
-        id: Date.now().toString(),
-        name: userData.name,
-        email: userData.email,
-        role: userData.role,
-        dateOfBirth: userData.dateOfBirth,
-        address: userData.address,
-        createdAt: new Date().toISOString(),
-      }
-
-      setUser(newUser)
-      localStorage.setItem("user", JSON.stringify(newUser))
-    } catch (error) {
-      throw new Error("Registration failed")
+      // TODO: call Google login API
     } finally {
       setLoading(false)
     }
@@ -98,9 +80,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
+        register,
         login,
         loginWithGoogle,
-        register,
         logout,
         loading,
       }}
@@ -112,8 +94,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider")
   return context
 }

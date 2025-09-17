@@ -17,6 +17,7 @@ export default function RegisterPage() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    phoneNumber: "",
     password: "",
     role: "user" as "user" | "shop",
     dateOfBirth: "",
@@ -118,6 +119,20 @@ export default function RegisterPage() {
               </SelectContent>
             </Select>
           </div>
+
+          <div>
+            <Label htmlFor="phoneNumber">Phone Number</Label>
+            <Input
+              id="phoneNumber"
+              type="tel"
+              placeholder="Enter your phone number"
+              value={formData.phoneNumber}
+              onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+              required
+              className="mt-1"
+            />
+          </div>
+
 
           <div>
             <Label htmlFor="dateOfBirth">Date of Birth (Optional)</Label>

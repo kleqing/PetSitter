@@ -25,7 +25,7 @@ export default function BookingPage() {
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Pet Sitter Not Found</h1>
-            <Link href="/services">
+            <Link href="/features">
               <Button>Back to Services</Button>
             </Link>
           </div>
@@ -42,7 +42,7 @@ export default function BookingPage() {
         <div className="container mx-auto px-4">
           <div className="mb-6">
             <Button variant="ghost" asChild className="mb-4">
-              <Link href="/services" className="flex items-center gap-2">
+              <Link href="/features" className="flex items-center gap-2">
                 <ArrowLeft className="h-4 w-4" />
                 Back to Services
               </Link>

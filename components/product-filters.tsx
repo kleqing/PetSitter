@@ -3,70 +3,131 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Slider } from "@/components/ui/slider"
 import { Badge } from "@/components/ui/badge"
-import type { ProductFilters } from "@/types/product"
-import { categories, brands, tags } from "@/data/products"
+import type { Product, ProductFilters } from "@/types/product"
+import {
+  getProductCategories,
+  getProductBrands,
+  getProductTags,
+} from "@/components/api/filter"
+import { useEffect, useState } from "react"
+
+interface Category {
+  categoryId: string
+  categoryName: string
+  products: any[]
+}
+interface Brand {
+  brandId: string
+  brandName: string
+}
+interface Tag {
+  productTagId: string
+  productTagName: string
+}
 
 interface ProductFiltersProps {
   filters: ProductFilters
-  onFiltersChange: (filters: ProductFilters) => void
-  totalResults: number
+  onFiltersChange: React.Dispatch<React.SetStateAction<ProductFilters>>
+  products: Product[]
 }
 
-export function ProductFiltersComponent({ filters, onFiltersChange, totalResults }: ProductFiltersProps) {
-  const handleCategoryChange = (category: string, checked: boolean) => {
-    const newCategories = checked ? [...filters.categories, category] : filters.categories.filter((c) => c !== category)
-    onFiltersChange({ ...filters, categories: newCategories })
+export default function ProductFiltersComponent({
+  filters,
+  onFiltersChange,
+  products,
+}: ProductFiltersProps) {
+  const [categories, setCategories] = useState<Category[]>([])
+  const [brands, setBrands] = useState<Brand[]>([])
+  const [tags, setTags] = useState<Tag[]>([])
+
+  useEffect(() => {
+    Promise.all([getProductCategories(), getProductBrands(), getProductTags()])
+        .then(([cats, brs, tgs]) => {
+            setCategories(cats);
+            setBrands(brs);
+            setTags(tgs);
+        })
+        .catch((err) => {
+            console.error("Failed to load filters", err);
+        });
+}, []);
+  
+  // init max price
+  useEffect(() => {
+    if (products.length > 0 && filters.priceRange[1] === 0) {
+      const maxPrice = Math.max(...products.map((p) => p.price))
+      onFiltersChange((prev) => ({
+        ...prev,
+        priceRange: [0, maxPrice],
+      }))
+    }
+  }, [products, filters.priceRange, onFiltersChange])
+
+  const handleCategoryChange = (id: string, checked: boolean) => {
+    onFiltersChange((prev) => ({
+        ...prev,
+        categories: checked
+            ? [...prev.categories, id]
+            : prev.categories.filter((c) => c !== id),
+    }));
+};
+
+  const handleBrandChange = (id: string, checked: boolean) => {
+    onFiltersChange((prev) => ({
+      ...prev,
+      brands: checked
+        ? [...prev.brands, id]
+        : prev.brands.filter((b) => b !== id),
+    }))
   }
 
-  const handleBrandChange = (brand: string, checked: boolean) => {
-    const newBrands = checked ? [...filters.brands, brand] : filters.brands.filter((b) => b !== brand)
-    onFiltersChange({ ...filters, brands: newBrands })
-  }
-
-  const handleTagChange = (tag: string, checked: boolean) => {
-    const newTags = checked ? [...filters.tags, tag] : filters.tags.filter((t) => t !== tag)
-    onFiltersChange({ ...filters, tags: newTags })
+  const handleTagChange = (id: string, checked: boolean) => {
+    onFiltersChange((prev) => ({
+      ...prev,
+      tags: checked
+        ? [...prev.tags, id]
+        : prev.tags.filter((t) => t !== id),
+    }))
   }
 
   const handlePriceChange = (value: number[]) => {
-    const newRange: [number, number] = [value[0], value[1]]
-    onFiltersChange({ ...filters, priceRange: newRange })
+    onFiltersChange((prev) => ({ ...prev, priceRange: [value[0], value[1]] }))
   }
+
+  const maxPriceFromProducts =
+    products.length > 0 ? Math.max(...products.map((p) => p.price)) : 0
 
   return (
     <div className="space-y-6">
-      {/* Results Count */}
-      <div className="text-sm text-gray-600">
-        Showing {totalResults > 12 ? "12-12" : `1-${totalResults}`} of {totalResults} results
-      </div>
-
-      {/* Filter by Categories */}
+      {/* Categories */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Filter by categories</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {categories.map((category) => (
-            <div key={category} className="flex items-center justify-between">
+          {categories.map((c) => (
+            <div key={c.categoryId} className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Checkbox
-                  id={category}
-                  checked={filters.categories.includes(category)}
-                  onCheckedChange={(checked) => handleCategoryChange(category, checked as boolean)}
+                  id={c.categoryId}
+                  checked={filters.categories.includes(c.categoryId)}
+                  onCheckedChange={(checked) =>
+                    handleCategoryChange(c.categoryId, checked as boolean)
+                  }
                 />
-                <label htmlFor={category} className="text-sm font-medium cursor-pointer">
-                  {category}
+                <label htmlFor={c.categoryId} className="text-sm font-medium cursor-pointer">
+                  {c.categoryName}
                 </label>
               </div>
               <Badge variant="secondary" className="text-xs">
-                {category === "Food" ? "20" : category === "Bowls" ? "15" : category === "Toys" ? "12" : "8"}
+                {c.products?.length ?? 0}
               </Badge>
             </div>
           ))}
         </CardContent>
       </Card>
 
-      {/* Filter by Price */}
+      {/* Price */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Filter by Price</CardTitle>
@@ -75,10 +136,9 @@ export function ProductFiltersComponent({ filters, onFiltersChange, totalResults
           <Slider
             value={filters.priceRange}
             onValueChange={handlePriceChange}
-            max={200}
+            max={maxPriceFromProducts}
             min={0}
             step={1}
-            className="w-full"
           />
           <div className="flex items-center justify-between text-sm">
             <span>
@@ -88,77 +148,51 @@ export function ProductFiltersComponent({ filters, onFiltersChange, totalResults
         </CardContent>
       </Card>
 
-      {/* Filter by Brands */}
+      {/* Brands */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Filter by brands</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {brands.map((brand) => (
-            <div key={brand} className="flex items-center justify-between">
+          {brands.map((b) => (
+            <div key={b.brandId} className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Checkbox
-                  id={brand}
-                  checked={filters.brands.includes(brand)}
-                  onCheckedChange={(checked) => handleBrandChange(brand, checked as boolean)}
+                  id={b.brandId}
+                  checked={filters.brands.includes(b.brandId)}
+                  onCheckedChange={(checked) =>
+                    handleBrandChange(b.brandId, checked as boolean)
+                  }
                 />
-                <label htmlFor={brand} className="text-sm font-medium cursor-pointer">
-                  {brand}
+                <label htmlFor={b.brandId} className="text-sm font-medium cursor-pointer">
+                  {b.brandName}
                 </label>
               </div>
-              <Badge variant="secondary" className="text-xs">
-                {brand === "Natural food" ? "15" : brand === "Pet care" ? "12" : "8"}
-              </Badge>
             </div>
           ))}
         </CardContent>
       </Card>
 
-      {/* Filter by Tags */}
+      {/* Tags */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Filter by tags</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => (
-              <Badge
-                key={tag}
-                variant={filters.tags.includes(tag) ? "default" : "outline"}
-                className="cursor-pointer"
-                onClick={() => handleTagChange(tag, !filters.tags.includes(tag))}
-              >
-                {tag}
-              </Badge>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Popular Products */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Popular products</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {[
-            { name: "Premium Dog Food", price: "$29.99", image: "/premium-dog-food-small.png" },
-            { name: "Premium Cat Food", price: "$20.99", image: "/premium-cat-food-small.png" },
-            { name: "Cat Bed", price: "$49.99", image: "/cat-bed-small.png" },
-            { name: "Dog Leash", price: "$9.99", image: "/dog-leash-small.png" },
-            { name: "Cat Bowl", price: "$19.99", image: "/cat-bowl-small.png" },
-          ].map((product, index) => (
-            <div key={index} className="flex items-center space-x-3">
-              <img
-                src={product.image || "/placeholder.svg"}
-                alt={product.name}
-                className="w-12 h-12 object-cover rounded"
-              />
-              <div className="flex-1">
-                <h4 className="text-sm font-medium">{product.name}</h4>
-                <p className="text-sm text-gray-600">{product.price}</p>
-              </div>
-            </div>
+        <CardContent className="flex flex-wrap gap-2">
+          {tags.map((t) => (
+            <Badge
+              key={t.productTagId}
+              variant={filters.tags.includes(t.productTagId) ? "default" : "outline"}
+              className="cursor-pointer"
+              onClick={() =>
+                handleTagChange(
+                  t.productTagId,
+                  !filters.tags.includes(t.productTagId)
+                )
+              }
+            >
+              {t.productTagName}
+            </Badge>
           ))}
         </CardContent>
       </Card>

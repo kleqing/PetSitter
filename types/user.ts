@@ -1,11 +1,11 @@
 export interface User {
   id: string
-  name: string
+  fullName: string
   email: string
   role: "user" | "shop"
   dateOfBirth?: string
   address?: string
-  avatar?: string
+  profilePictureUrl?: string
   createdAt: string
 }
 

@@ -1,23 +1,23 @@
 export interface Product {
-  id: string
-  name: string
+  productId: string
+  productName: string
   price: number
-  originalPrice?: number
-  image: string
-  category: string
-  brand: string
-  tags: string[]
+  productImageUrl: string
+  categoryName: string
+  brandName: string
+  tags: string[]  // chỉ lưu productTagId
   description: string
-  inStock: boolean
+  availabilityStatus: boolean
   rating: number
-  reviews: number
-  isFavorite?: boolean
+  categoryId?: string
+  brandId?: string
+  reviews: { userId: string; comment: string; rating: number }[]
 }
 
 export interface ProductFilters {
   categories: string[]
   priceRange: [number, number]
   brands: string[]
-  tags: string[]
+  tags: string[] // list productTagId đang chọn
   sortBy: "latest" | "price-low" | "price-high" | "rating"
 }

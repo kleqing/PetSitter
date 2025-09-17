@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Heart, ShoppingCart, User, LogOut, Settings, Phone, Package } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
+import { UserRole } from "@/enum/UserRole"
 
 export function Navigation() {
   const { user, logout } = useAuth()
@@ -108,20 +109,20 @@ export function Navigation() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
-                      <AvatarFallback>
-                        {user.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </AvatarFallback>
+                      <AvatarImage src={user.profilePictureUrl || "/placeholder.svg"} alt={user.fullName} />
+                        <AvatarFallback>
+                          {user.fullName
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <div className="flex items-center justify-start gap-2 p-2">
                     <div className="flex flex-col space-y-1 leading-none">
-                      <p className="font-medium">{user.name}</p>
+                      <p className="font-medium">{user.fullName}</p>
                       <p className="w-[200px] truncate text-sm text-muted-foreground">{user.email}</p>
                     </div>
                   </div>
@@ -131,7 +132,7 @@ export function Navigation() {
                       Profile
                     </Link>
                   </DropdownMenuItem>
-                  {user.role === "shop" && (
+                  {user.role === UserRole.Shop && (
                     <>
                       <DropdownMenuItem asChild>
                         <Link href="/dashboard" className="flex items-center">
