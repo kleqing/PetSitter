@@ -1,4 +1,4 @@
-import type { PetSitter, Review } from "@/types/service"
+import type { PetSitter } from "@/types/service"
 
 export const petSitters: PetSitter[] = [
   {
@@ -135,18 +135,5 @@ export const petSitters: PetSitter[] = [
     },
     services: ["Pet Daycare", "House Sitting", "Pet Boarding"],
     verified: true,
-  },
-]
-
-export const sampleReviews: Review[] = [
-  {
-    id: "1",
-    userId: "1",
-    userName: "JOHN",
-    userAvatar: "/placeholder.svg?height=40&width=40",
-    rating: 5,
-    comment:
-      "Jane was my old colleague from an English Teaching center. She provided us with the best services possible, our pets received really great love and care!",
-    date: "1 month ago",
   },
 ]

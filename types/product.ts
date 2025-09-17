@@ -1,3 +1,5 @@
+import { Review } from "./review"
+
 export interface Product {
   productId: string
   productName: string
@@ -5,13 +7,13 @@ export interface Product {
   productImageUrl: string
   categoryName: string
   brandName: string
-  tags: string[]  // chỉ lưu productTagId
+  tags: string[]
   description: string
   availabilityStatus: boolean
   rating: number
   categoryId?: string
   brandId?: string
-  reviews: { userId: string; comment: string; rating: number }[]
+  reviews: Review[]
 }
 
 export interface ProductFilters {

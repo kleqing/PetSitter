@@ -9,8 +9,9 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Heart, Star, ShoppingCart, Minus, Plus, ArrowLeft } from "lucide-react"
-import { getProductById, getRelatedProduct } from "@/components/api/product" 
+import { getProductById, getRelatedProduct, productReview } from "@/components/api/product" 
 import type { Product } from "@/types/product"
+import { Review } from "@/types/review"
 
 export default function ProductDetailPage() {
   const params = useParams()
@@ -20,6 +21,18 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1)
   const [isFavorite, setIsFavorite] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [loadingReviews, setLoadingReviews] = useState(false)
+  const [averageRating, setAverageRating] = useState<number>(0)
+
+  useEffect(() => {
+    if (reviews.length > 0) {
+      const total = reviews.reduce((sum, r) => sum + r.rating, 0)
+      setAverageRating(total / reviews.length)
+    } else {
+      setAverageRating(0)
+    }
+  }, [reviews])
 
   useEffect(() => {
     if (params?.id) {
@@ -36,6 +49,16 @@ export default function ProductDetailPage() {
         .then((data) => setRelatedProducts(data))
         .catch(() => setRelatedProducts([]))
         .finally(() => setLoading(false))
+    }
+  }, [params?.id])
+
+  useEffect(() => {
+    if (params?.id) {
+      setLoadingReviews(true)
+      productReview(params.id as string)
+        .then(setReviews)
+        .catch(() => setReviews([]))
+        .finally(() => setLoadingReviews(false))
     }
   }, [params?.id])
 
@@ -102,12 +125,12 @@ export default function ProductDetailPage() {
                     <Star
                       key={i}
                       className={`w-5 h-5 ${
-                        i < Math.floor(product.rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+                        i < Math.round(averageRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
                       }`}
                     />
                   ))}
                 </div>
-                <span className="text-gray-600">({product.reviews.length} reviews)</span>
+                <span className="text-gray-600">({reviews.length} reviews)</span>
               </div>
               <div className="flex items-center space-x-4 mb-6">
                 <span className="text-3xl font-bold text-gray-900">${product.price}</span>
@@ -182,7 +205,7 @@ export default function ProductDetailPage() {
         <Tabs defaultValue="description" className="mb-16">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="description">Description</TabsTrigger>
-            <TabsTrigger value="reviews">Reviews ({product.reviews.length})</TabsTrigger>
+            <TabsTrigger value="reviews">Reviews ({reviews.length})</TabsTrigger>
             <TabsTrigger value="shipping">Shipping Info</TabsTrigger>
           </TabsList>
           <TabsContent value="description" className="mt-6">
@@ -197,26 +220,61 @@ export default function ProductDetailPage() {
             </Card>
           </TabsContent>
           <TabsContent value="reviews" className="mt-6">
-            <Card>
-              <CardContent className="p-6">
+          <Card>
+            <CardContent className="p-6">
+              {loadingReviews ? (
+                <p>Loading reviews...</p>
+              ) : reviews.length === 0 ? (
+                <p className="text-gray-500">No reviews yet</p>
+              ) : (
                 <div className="space-y-4">
-                  {[...Array(3)].map((_, index) => (
-                    <div key={index} className="border-b pb-4 last:border-b-0">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <div className="flex">
+                  {reviews.map((review) => (
+                    <div
+                      key={review.reviewId}
+                      className="flex space-x-3 border-b pb-4 last:border-b-0"
+                    >
+                      {/* Avatar */}
+                      <img
+                        src={review.users.profilePictureUrl || "/placeholder.svg"}
+                        alt={review.users.fullName}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+
+                      {/* Nội dung */}
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium">{review.users.fullName}</span>
+                          <span className="text-sm text-gray-500">
+                            {new Date(review.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+
+                        {/* Stars */}
+                        <div className="flex items-center mb-2">
                           {[...Array(5)].map((_, i) => (
-                            <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                            <Star
+                              key={i}
+                              className={`w-4 h-4 ${
+                                i < review.rating
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : "text-gray-300"
+                              }`}
+                            />
                           ))}
                         </div>
-                        <span className="font-medium">Customer {index + 1}</span>
+
+                        {/* Comment */}
+                        <br />
+                        <p className="text-gray-600">{review.comment}</p>
                       </div>
-                      <p className="text-gray-600">Great product! My pet loves it and the quality is excellent.</p>
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
           <TabsContent value="shipping" className="mt-6">
             <Card>
               <CardContent className="p-6">

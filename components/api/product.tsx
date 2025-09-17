@@ -1,5 +1,6 @@
 // components/api/product.ts
 import type { Product } from "@/types/product";
+import { Review } from "@/types/review";
 
 function safeImage(url: any) {
     if (!url) return "/placeholder.png";
@@ -19,6 +20,8 @@ export async function listProducts(): Promise<Product[]> {
 
     const result = await res.json();
     const items = result?.data ?? [];
+    // Debug log
+    console.log("Fetched products:", items);
     return items.map((item: any) => ({
         productId: item.productId,
         productName: item.productName,
@@ -28,11 +31,25 @@ export async function listProducts(): Promise<Product[]> {
         brandId: item.brandId, 
         categoryName: item.category?.categoryName ?? "",
         brandName: item.brand?.brandName ?? "",
-        tags: item.tags ? [item.tags.productTagName] : [],
+        tags: item.tags ? [item.tags.productTagId] : [],
         description: item.description,
         availabilityStatus: item.availabilityStatus,
-        rating: item.rating ?? 0,
-        reviews: item.reviews?.length ?? 0,
+        rating: item.reviews?.length > 0 
+            ? item.reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / item.reviews.length 
+            : 0,
+        reviews: item.reviews?.map((r: any): Review => ({
+            reviewId: r.reviewId,
+            userId: r.userId,
+            productId: r.productId,
+            rating: r.rating,
+            comment: r.comment,
+            createdAt: r.createdAt,
+            users: r.users ? {
+                userId: r.users.userId,
+                fullName: r.users.fullName,
+                profilePictureUrl: r.users.profilePictureUrl,
+            } : { userId: "", fullName: "", profilePictureUrl: "" },
+        })) ?? [],
     }));
 }
 
@@ -67,7 +84,7 @@ export async function getProductById(id: string): Promise<Product> {
 }
 
 export async function getRelatedProduct(id: string): Promise<Product[]> {
-    const res = await fetch(`https://localhost:7277/api/product/related/${id}`, {
+    const res = await fetch(`https://localhost:7277/api/product/related-products/${id}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" }
     });
@@ -96,3 +113,28 @@ export async function getRelatedProduct(id: string): Promise<Product[]> {
     }));
 }
 
+export async function productReview(productId: string): Promise<Review[]> {
+    const res = await fetch(`https://localhost:7277/api/product/reviews/${productId}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" }
+    })
+
+    if (!res.ok) throw new Error("No reviews found")
+    const result = await res.json()
+    const items = result.data ?? []
+
+    console.log("Fetched reviews:", items); // Debug log
+    return items.map((item: any): Review => ({
+        reviewId: item.reviewId,
+        userId: item.userId,
+        productId: item.productId,
+        rating: item.rating,
+        comment: item.comment,
+        createdAt: item.createdAt,
+        users: {
+        userId: item.users.userId,
+        fullName: item.users.fullName,
+        profilePictureUrl: item.users.profilePictureUrl,
+        }
+    }))
+}
