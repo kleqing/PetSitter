@@ -17,7 +17,7 @@ export function Footer() {
                 <div className="font-bold text-xl">Sister</div>
               </div>
             </div>
-            <p className="text-blue-200 text-sm">© 2023© 2023 Webtechsolution.in</p>
+            <p className="text-blue-200 text-sm">Copyright © 2025 PetSitter<br/>All rights reserved.</p>
           </div>
 
           {/* Menu */}
@@ -30,7 +30,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/services" className="text-blue-200 hover:text-white transition-colors">
+                <Link href="/features" className="text-blue-200 hover:text-white transition-colors">
                   Pet Services
                 </Link>
               </li>
@@ -48,26 +48,14 @@ export function Footer() {
             <ul className="space-y-2">
               <li>
                 <a href="#" className="flex items-center text-blue-200 hover:text-white transition-colors">
-                  <Twitter className="w-4 h-4 mr-2" />
-                  Twitter
-                </a>
-              </li>
-              <li>
-                <a href="#" className="flex items-center text-blue-200 hover:text-white transition-colors">
-                  <Linkedin className="w-4 h-4 mr-2" />
-                  LinkedIn
-                </a>
-              </li>
-              <li>
-                <a href="#" className="flex items-center text-blue-200 hover:text-white transition-colors">
                   <Facebook className="w-4 h-4 mr-2" />
                   Facebook
                 </a>
               </li>
               <li>
                 <a href="#" className="flex items-center text-blue-200 hover:text-white transition-colors">
-                  <Instagram className="w-4 h-4 mr-2" />
-                  Instagram
+                  <Twitter className="w-4 h-4 mr-2" />
+                  X
                 </a>
               </li>
             </ul>
@@ -80,8 +68,7 @@ export function Footer() {
               <li className="flex items-center text-blue-200">
                 <Phone className="w-4 h-4 mr-2" />
                 <div>
-                  <div>SDT</div>
-                  <div>SDT</div>
+                  <div>0123456789</div>
                 </div>
               </li>
               <li className="flex items-center text-blue-200">
@@ -90,7 +77,7 @@ export function Footer() {
               </li>
               <li className="flex items-center text-blue-200">
                 <MapPin className="w-4 h-4 mr-2" />
-                Địa chỉ
+                Da Nang, Viet Nam
               </li>
             </ul>
           </div>
