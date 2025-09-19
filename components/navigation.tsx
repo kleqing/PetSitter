@@ -88,15 +88,10 @@ export function Navigation() {
             {/* Phone number */}
             <div className="hidden lg:flex items-center space-x-2 text-gray-600">
               <Phone className="h-4 w-4" />
-              <span className="text-sm">(000) 000-0000</span>
+              <span className="text-sm">(+84) 123-456-789</span>
             </div>
 
-            {/* Wishlist and Cart */}
-            <Button variant="ghost" size="sm" className="p-2" asChild>
-              <Link href="/wishlist">
-                <Heart className="h-5 w-5" />
-              </Link>
-            </Button>
+            {/* Cart */}
             <Button variant="ghost" size="sm" className="p-2" asChild>
               <Link href="/cart">
                 <ShoppingCart className="h-5 w-5" />

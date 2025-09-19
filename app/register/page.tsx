@@ -1,17 +1,17 @@
-"use client"
+"use client";
 
-import type React from "react"
-
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { useAuth } from "@/contexts/auth-context"
-import { Eye, EyeOff } from "lucide-react"
+import type React from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from "@/contexts/auth-context";
+import { Eye, EyeOff } from "lucide-react";
+import { useCountries, useStates, Country, State } from "@/components/api/location";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -21,39 +21,71 @@ export default function RegisterPage() {
     password: "",
     role: "user" as "user" | "shop",
     dateOfBirth: "",
+    country: "",
+    state: "",
     address: "",
-  })
-  const [showPassword, setShowPassword] = useState(false)
-  const [acceptTerms, setAcceptTerms] = useState(false)
-  const [error, setError] = useState("")
-  const { register, loginWithGoogle, loading } = useAuth()
-  const router = useRouter()
+    shopName: "",
+    description: ""
+  });
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { register, loginWithGoogle, loading } = useAuth();
+  const router = useRouter();
+
+  const { countries, error: countryError } = useCountries();
+  const { states: availableStates, error: stateError } = useStates(formData.country);
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => {
+      const newData = { ...prev, [field]: value };
+
+      if (field === "state" || field === "country") {
+        const stateName = availableStates.find((s) => s.iso2 === newData.state)?.name || "";
+        const countryName = countries.find((c) => c.iso2 === newData.country)?.name || "";
+        newData.address = [stateName, countryName].filter(Boolean).join(", ");
+      }
+
+      return newData;
+    });
+
+    if (field === "country") {
+      setFormData((prev) => ({ ...prev, state: "", address: "" }));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
+    e.preventDefault();
+    setError(null);
 
     if (!acceptTerms) {
-      setError("Please accept the terms and conditions")
-      return
+      setError("Please accept the terms and conditions");
+      return;
+    }
+
+    // Kiểm tra các trường bắt buộc cho ShopOwner
+    if (formData.role === "shop" && (!formData.shopName || !formData.description)) {
+      setError("Shop Name and Description are required for Shop Owner registration");
+      return;
     }
 
     try {
-      await register(formData)
-      router.push("/")
+      await register({ ...formData });
+      router.push("/");
     } catch (err) {
-      setError("Registration failed. Please try again.")
+      setError(err instanceof Error ? err.message : "Registration failed. Please try again.");
     }
-  }
+  };
 
   const handleGoogleLogin = async () => {
     try {
-      await loginWithGoogle()
-      router.push("/")
+      await loginWithGoogle();
+      router.push("/");
     } catch (err) {
-      setError("Google login failed")
+      setError("Google login failed");
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -85,7 +117,7 @@ export default function RegisterPage() {
               type="text"
               placeholder="Enter your profile name"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) => handleInputChange("name", e.target.value)}
               required
               className="mt-1"
             />
@@ -98,7 +130,7 @@ export default function RegisterPage() {
               type="email"
               placeholder="Enter your email address"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) => handleInputChange("email", e.target.value)}
               required
               className="mt-1"
             />
@@ -108,7 +140,7 @@ export default function RegisterPage() {
             <Label htmlFor="role">Choose the type you want to register with our site</Label>
             <Select
               value={formData.role}
-              onValueChange={(value: "user" | "shop") => setFormData({ ...formData, role: value })}
+              onValueChange={(value: "user" | "shop") => handleInputChange("role", value)}
             >
               <SelectTrigger className="mt-1 w-full">
                 <SelectValue placeholder="Select your role" />
@@ -127,12 +159,11 @@ export default function RegisterPage() {
               type="tel"
               placeholder="Enter your phone number"
               value={formData.phoneNumber}
-              onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+              onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
               required
               className="mt-1"
             />
           </div>
-
 
           <div>
             <Label htmlFor="dateOfBirth">Date of Birth (Optional)</Label>
@@ -141,22 +172,52 @@ export default function RegisterPage() {
                 id="dateOfBirth"
                 type="date"
                 value={formData.dateOfBirth}
-                onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
                 className="[&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-4 [&::-webkit-calendar-picker-indicator]:h-4 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
               />
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="address">Address (Optional)</Label>
-            <Input
-              id="address"
-              type="text"
-              placeholder="Enter your address"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              className="mt-1"
-            />
+          {/* Location Fields */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="country">Country</Label>
+              <Select
+                value={formData.country}
+                onValueChange={(value) => handleInputChange("country", value)}
+              >
+                <SelectTrigger className="mt-1 w-full">
+                  <SelectValue placeholder="Choose country" />
+                </SelectTrigger>
+                <SelectContent>
+                  {countries.map((country) => (
+                    <SelectItem key={country.iso2} value={country.iso2}>
+                      {country.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="state">State/Province</Label>
+              <Select
+                value={formData.state}
+                onValueChange={(value) => handleInputChange("state", value)}
+                disabled={!formData.country}
+              >
+                <SelectTrigger className="mt-1 w-full">
+                  <SelectValue placeholder={formData.country ? "Choose state" : "Select country first"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableStates.map((state) => (
+                    <SelectItem key={state.iso2} value={state.iso2}>
+                      {state.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div>
@@ -167,7 +228,7 @@ export default function RegisterPage() {
                 type={showPassword ? "text" : "password"}
                 placeholder="Enter your password"
                 value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                onChange={(e) => handleInputChange("password", e.target.value)}
                 required
                 className="pr-10"
               />
@@ -188,6 +249,36 @@ export default function RegisterPage() {
             </p>
           </div>
 
+          {formData.role === "shop" && (
+            <>
+              <div>
+                <Label htmlFor="shopName">Shop Name</Label>
+                <Input
+                  id="shopName"
+                  type="text"
+                  placeholder="Enter your shop name"
+                  value={formData.shopName}
+                  onChange={(e) => handleInputChange("shopName", e.target.value)}
+                  required // Yêu cầu khi là ShopOwner
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="description">Shop Description</Label>
+                <Input
+                  id="description"
+                  type="text"
+                  placeholder="Describe your shop"
+                  value={formData.description}
+                  onChange={(e) => handleInputChange("description", e.target.value)}
+                  required // Yêu cầu khi là ShopOwner
+                  className="mt-1"
+                />
+              </div>
+            </>
+          )}
+
           <div className="flex items-start">
             <Checkbox
               id="terms"
@@ -195,15 +286,10 @@ export default function RegisterPage() {
               onCheckedChange={(checked) => setAcceptTerms(checked as boolean)}
             />
             <Label htmlFor="terms" className="ml-2 text-sm">
-              By creating an account, you agree to the{" "}
-              <Link href="/terms" className="text-blue-600 hover:underline">
-                Terms of use
-              </Link>{" "}
-              and{" "}
-              <Link href="/privacy" className="text-blue-600 hover:underline">
+              By creating an account, you agree to our
+              <Link href="/privacy" className="text-blue-600">
                 Privacy Policy
               </Link>
-              .
             </Label>
           </div>
 
@@ -212,46 +298,7 @@ export default function RegisterPage() {
           </Button>
         </form>
 
-        {/* Social Login */}
-        <div className="space-y-4">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-gray-50 text-gray-500">Or continue with</span>
-            </div>
-          </div>
-
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full bg-transparent"
-            onClick={handleGoogleLogin}
-            disabled={loading}
-          >
-            <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-              <path
-                fill="#4285F4"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-              />
-            </svg>
-            Google
-          </Button>
-        </div>
       </div>
     </div>
-  )
+  );
 }

@@ -14,7 +14,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Upload, X, ArrowLeft, Save } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
-import { products } from "@/data/products"
 import Link from "next/link"
 import Image from "next/image"
 

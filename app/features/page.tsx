@@ -210,7 +210,7 @@ export default function ServicesPage() {
                         <div className="text-right">
                           <p className="text-sm text-gray-500">From</p>
                           <p className="text-lg font-bold text-orange-500">${service.pricePerPerson}</p>
-                          <p className="text-sm text-gray-500">/person</p>
+                          <p className="text-sm text-gray-500">per person</p>
                         </div>
                       </div>
 

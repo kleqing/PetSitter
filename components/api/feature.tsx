@@ -19,9 +19,6 @@ export async function getListServices(): Promise<{ services: Service[]; tags: Se
         const serviceResult = await serviceRes.json();
         const tagResult = await tagRes.json();
 
-        console.log("API Response - Services:", serviceResult);
-        console.log("API Response - Tags:", tagResult);
-
         const services = serviceResult.data.map((item: any) => ({
             ...item,
             serviceImageUrl: Array.isArray(item.serviceImageUrl) ? item.serviceImageUrl : [item.serviceImageUrl || "/placeholder.svg"],

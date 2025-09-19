@@ -12,7 +12,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, Edit, Trash2, Package, DollarSign, ShoppingBag, TrendingUp } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
-import { products } from "@/data/products"
 import type { Product } from "@/types/product"
 import Image from "next/image"
 import { useRouter } from "next/navigation"

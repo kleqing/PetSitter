@@ -21,7 +21,6 @@ export async function listProducts(): Promise<Product[]> {
     const result = await res.json();
     const items = result?.data ?? [];
     // Debug log
-    console.log("Fetched products:", items);
     return items.map((item: any) => ({
         productId: item.productId,
         productName: item.productName,
@@ -123,7 +122,6 @@ export async function productReview(productId: string): Promise<Review[]> {
     const result = await res.json()
     const items = result.data ?? []
 
-    console.log("Fetched reviews:", items); // Debug log
     return items.map((item: any): Review => ({
         reviewId: item.reviewId,
         userId: item.userId,

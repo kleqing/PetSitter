@@ -1,60 +1,115 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useAuth } from "@/contexts/auth-context"
-import { Navigation } from "@/components/navigation"
-import { Footer } from "@/components/footer"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { CalendarIcon, MapPinIcon, MailIcon, UserIcon, EditIcon, SaveIcon, XIcon } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/auth-context";
+import { Navigation } from "@/components/navigation";
+import { Footer } from "@/components/footer";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { CalendarIcon, MapPinIcon, MailIcon, UserIcon, EditIcon, SaveIcon, XIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth()
-  const router = useRouter()
-  const [isEditing, setIsEditing] = useState(false)
+  const { user: authUser, logout } = useAuth(); // Thêm updateUser từ context
+  const router = useRouter();
+  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    dateOfBirth: user?.dateOfBirth || "",
-    address: user?.address || "",
-  })
+    name: "",
+    email: "",
+    dateOfBirth: "",
+    address: "",
+  });
+  const [error, setError] = useState<string | null>(null);
+
+  // Lấy thông tin từ localStorage khi tải trang
+  useEffect(() => {
+    const storedUser = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+    if (storedUser) {
+      const userData = JSON.parse(storedUser);
+      setFormData({
+        name: userData.fullName || "",
+        email: userData.email || "",
+        dateOfBirth: userData.dateOfBirth || "",
+        address: userData.address || "",
+      });
+    } else if (authUser) {
+      setFormData({
+        name: authUser.name || "",
+        email: authUser.email || "",
+        dateOfBirth: authUser.dateOfBirth || "",
+        address: authUser.address || "",
+      });
+    }
+  }, [authUser]);
 
   // Redirect if not logged in
-  if (!user) {
-    router.push("/login")
-    return null
+  if (!authUser && !localStorage.getItem("user")) {
+    router.push("/login");
+    return null;
   }
 
-  const handleSave = () => {
-    // In a real app, this would update the user data via API
-    console.log("[v0] Saving profile data:", formData)
-    setIsEditing(false)
-    // Here you would typically update the user context with new data
-  }
+  const handleSave = async () => {
+    try {
+      const userId = localStorage.getItem("userId") || authUser?.userId;
+      if (!userId) throw new Error("User ID not found");
+
+      // Giả định API endpoint để cập nhật thông tin người dùng
+      const response = await fetch(`https://localhost:7277/api/user/update/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fullName: formData.name,
+          email: formData.email,
+          dateOfBirth: formData.dateOfBirth,
+          address: formData.address,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to update profile");
+
+      const updatedUser = await response.json();
+      // Cập nhật localStorage
+      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+      localStorage.setItem(
+        "user",
+        JSON.stringify({ ...storedUser, ...updatedUser, fullName: formData.name, email: formData.email, dateOfBirth: formData.dateOfBirth, address: formData.address })
+      );
+      // Cập nhật context nếu có
+      if (updateUser) updateUser({ ...authUser, ...formData });
+      setIsEditing(false);
+      setError(null);
+      console.log("[v0] Profile updated successfully:", formData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred while saving");
+      console.error("Error saving profile:", err);
+    }
+  };
 
   const handleCancel = () => {
     setFormData({
-      name: user?.name || "",
-      email: user?.email || "",
-      dateOfBirth: user?.dateOfBirth || "",
-      address: user?.address || "",
-    })
-    setIsEditing(false)
-  }
+      name: authUser?.name || (JSON.parse(localStorage.getItem("user") || "{}").fullName || ""),
+      email: authUser?.email || (JSON.parse(localStorage.getItem("user") || "{}").email || ""),
+      dateOfBirth: authUser?.dateOfBirth || (JSON.parse(localStorage.getItem("user") || "{}").dateOfBirth || ""),
+      address: authUser?.address || (JSON.parse(localStorage.getItem("user") || "{}").address || ""),
+    });
+    setIsEditing(false);
+    setError(null);
+  };
 
   const getInitials = (name: string) => {
     return name
       .split(" ")
       .map((n) => n[0])
       .join("")
-      .toUpperCase()
-  }
+      .toUpperCase();
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -67,16 +122,16 @@ export default function ProfilePage() {
             <CardHeader className="text-center">
               <div className="flex flex-col items-center space-y-4">
                 <Avatar className="w-24 h-24">
-                  <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
+                  <AvatarImage src={authUser?.avatar || JSON.parse(localStorage.getItem("user") || "{}").profilePictureUrl || "/placeholder.svg"} alt={formData.name} />
                   <AvatarFallback className="text-2xl bg-orange-100 text-orange-600">
-                    {getInitials(user.name)}
+                    {getInitials(formData.name)}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <CardTitle className="text-2xl">{user.name}</CardTitle>
-                  <CardDescription className="text-lg">{user.email}</CardDescription>
-                  <Badge variant={user.role === "shop" ? "default" : "secondary"} className="mt-2">
-                    {user.role === "shop" ? "Shop Owner" : "Regular User"}
+                  <CardTitle className="text-2xl">{formData.name}</CardTitle>
+                  <CardDescription className="text-lg">{formData.email}</CardDescription>
+                  <Badge variant={JSON.parse(localStorage.getItem("user") || "{}").role === "shop" ? "default" : "secondary"} className="mt-2">
+                    {JSON.parse(localStorage.getItem("user") || "{}").role === "shop" ? "Shop Owner" : "Regular User"}
                   </Badge>
                 </div>
               </div>
@@ -99,7 +154,7 @@ export default function ProfilePage() {
                     </Button>
                   ) : (
                     <div className="flex space-x-2">
-                      <Button onClick={handleSave} size="sm">
+                      <Button onClick={handleSave} size="sm" disabled={error !== null}>
                         <SaveIcon className="w-4 h-4 mr-2" />
                         Save
                       </Button>
@@ -111,6 +166,7 @@ export default function ProfilePage() {
                   )}
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {error && <p className="text-red-500">{error}</p>}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="name">Full Name</Label>
@@ -123,7 +179,7 @@ export default function ProfilePage() {
                       ) : (
                         <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
                           <UserIcon className="w-4 h-4 text-gray-500" />
-                          <span>{user.name}</span>
+                          <span>{formData.name}</span>
                         </div>
                       )}
                     </div>
@@ -140,7 +196,7 @@ export default function ProfilePage() {
                       ) : (
                         <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
                           <MailIcon className="w-4 h-4 text-gray-500" />
-                          <span>{user.email}</span>
+                          <span>{formData.email}</span>
                         </div>
                       )}
                     </div>
@@ -151,13 +207,13 @@ export default function ProfilePage() {
                         <Input
                           id="dateOfBirth"
                           type="date"
-                          value={formData.dateOfBirth}
+                          value={formData.dateOfBirth.split("T")[0]} // Chỉ lấy phần ngày
                           onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
                         />
                       ) : (
                         <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
                           <CalendarIcon className="w-4 h-4 text-gray-500" />
-                          <span>{user.dateOfBirth || "Not provided"}</span>
+                          <span>{formData.dateOfBirth ? new Date(formData.dateOfBirth).toLocaleDateString() : "Not provided"}</span>
                         </div>
                       )}
                     </div>
@@ -173,7 +229,7 @@ export default function ProfilePage() {
                       ) : (
                         <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
                           <MapPinIcon className="w-4 h-4 text-gray-500" />
-                          <span>{user.address || "Not provided"}</span>
+                          <span>{formData.address || "Not provided"}</span>
                         </div>
                       )}
                     </div>
@@ -184,15 +240,15 @@ export default function ProfilePage() {
                   <div className="space-y-2">
                     <Label>Account Type</Label>
                     <div className="p-2 bg-gray-50 rounded">
-                      <Badge variant={user.role === "shop" ? "default" : "secondary"}>
-                        {user.role === "shop" ? "Shop Owner" : "Regular User"}
+                      <Badge variant={JSON.parse(localStorage.getItem("user") || "{}").role === "shop" ? "default" : "secondary"}>
+                        {JSON.parse(localStorage.getItem("user") || "{}").role === "shop" ? "Shop Owner" : "Regular User"}
                       </Badge>
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label>Member Since</Label>
-                    <div className="p-2 bg-gray-50 rounded">{new Date(user.createdAt).toLocaleDateString()}</div>
+                    <div className="p-2 bg-gray-50 rounded">{new Date(JSON.parse(localStorage.getItem("user") || "{}").createdAt).toLocaleDateString()}</div>
                   </div>
                 </CardContent>
               </Card>
@@ -222,7 +278,7 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
 
-              {user.role === "shop" && (
+              {JSON.parse(localStorage.getItem("user") || "{}").role === "shop" && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Shop Owner Tools</CardTitle>
@@ -249,5 +305,5 @@ export default function ProfilePage() {
 
       <Footer />
     </div>
-  )
+  );
 }

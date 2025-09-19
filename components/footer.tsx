@@ -73,7 +73,7 @@ export function Footer() {
               </li>
               <li className="flex items-center text-blue-200">
                 <Mail className="w-4 h-4 mr-2" />
-                Email
+                noreply@petsitter.com
               </li>
               <li className="flex items-center text-blue-200">
                 <MapPin className="w-4 h-4 mr-2" />

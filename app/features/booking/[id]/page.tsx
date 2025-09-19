@@ -117,10 +117,10 @@ export default function BookingPage() {
                   <div className="grid grid-cols-3 gap-4">
                     <div className="cursor-pointer rounded-lg overflow-hidden">
                       <Image
-                        src={service.serviceImageUrl[0] || "/placeholder.svg"}
+                        src={service.serviceImageUrl instanceof Array ? service.serviceImageUrl[0] : service.serviceImageUrl || "/placeholder.svg"}
                         alt={`${service.serviceName} photo`}
-                        width={200}
-                        height={150}
+                        width={500}
+                        height={500}
                         className="w-full h-32 object-cover hover:scale-105 transition-transform"
                       />
                     </div>
