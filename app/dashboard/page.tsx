@@ -1,372 +1,550 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Edit, Trash2, Package, DollarSign, ShoppingBag, TrendingUp } from "lucide-react"
-import { useAuth } from "@/contexts/auth-context"
-import type { Product } from "@/types/product"
-import Image from "next/image"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Package,
+  DollarSign,
+  ShoppingBag,
+  ArrowLeft,
+} from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
+import { Product, ProductFilters } from "@/types/product";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import {
+  getShopByUserId,
+  getProductsByShopId,
+  getProductCountByShopId,
+  getOrderCountByShopId,
+  addProduct,
+  updateProduct,
+  getProductTags,
+  getProductBrands,
+  getProductCategories,
+} from "@/components/api/shop";
 
 export default function DashboardPage() {
-  const { user } = useAuth()
-  const router = useRouter()
-  const [isAddProductOpen, setIsAddProductOpen] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-  const [newProduct, setNewProduct] = useState({
-    name: "",
-    price: "",
-    category: "",
-    brand: "",
+  const { user } = useAuth();
+  const router = useRouter();
+
+  const [shopId, setShopId] = useState<string | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    totalRevenue: 0,
+    totalOrders: 0,
+  });
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<Product | null>(null);
+  const [form, setForm] = useState<{
+    shopId: string;
+    productName: string;
+    description: string;
+    price: number;
+    stockQuantity: number;
+    categoryId: string;
+    brandId: string;
+    tagId: string;
+    imageUrl?: File | null;
+  }>({
+    shopId: "",
+    productName: "",
     description: "",
-    image: "",
-    tags: [] as string[],
-  })
+    price: 0,
+    stockQuantity: 0,
+    categoryId: "",
+    brandId: "",
+    tagId: "",
+    imageUrl: null,
+  });
+  const [tags, setTags] = useState<{ productTagId: string; productTagName: string }[]>([]);
+  const [brands, setBrands] = useState<{ brandId: string; brandName: string }[]>([]);
+  const [categories, setCategories] = useState<{ categoryId: string; categoryName: string }[]>([]);
+  const [filters, setFilters] = useState<ProductFilters>({
+    categories: [],
+    brands: [],
+    tags: [],
+    priceRange: [0, Infinity],
+    sortBy: "latest",
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Redirect if not a shop owner
+  // Redirect if not shop owner
   if (!user || user.role !== "shop") {
-    router.push("/")
-    return null
+    router.push("/");
+    return null;
   }
 
-  // Mock shop products (in real app, this would be filtered by shop owner)
-  const shopProducts = products.slice(0, 6)
-  const totalProducts = shopProducts.length
-  const totalRevenue = shopProducts.reduce((sum, product) => sum + product.price, 0)
-  const totalOrders = 24 // Mock data
+  // Load shop + stats + products + tags + brands + categories
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
 
-  const handleAddProduct = () => {
-    // In real app, this would make an API call
-    console.log("Adding product:", newProduct)
-    setNewProduct({
-      name: "",
-      price: "",
-      category: "",
-      brand: "",
-      description: "",
-      image: "",
-      tags: [],
-    })
-    setIsAddProductOpen(false)
-  }
+      const shopRes = await getShopByUserId(user.userId);
+      if (!shopRes.success || !shopRes.data) {
+        setError("Failed to load shop");
+        setLoading(false);
+        return;
+      }
 
-  const handleEditProduct = (product: Product) => {
-    setEditingProduct(product)
-    setNewProduct({
-      name: product.name,
-      price: product.price.toString(),
-      category: product.category,
-      brand: product.brand,
-      description: product.description || "",
-      image: product.image,
-      tags: product.tags,
-    })
-  }
+      const sid = shopRes.data.shopId;
+      setShopId(sid);
+      setForm((prev) => ({ ...prev, shopId: sid }));
 
-  const handleUpdateProduct = () => {
-    // In real app, this would make an API call
-    console.log("Updating product:", editingProduct?.id, newProduct)
-    setEditingProduct(null)
-    setNewProduct({
-      name: "",
-      price: "",
-      category: "",
-      brand: "",
-      description: "",
-      image: "",
-      tags: [],
-    })
-  }
+      const [prodRes, countRes, orderRes, tagsRes, brandsRes, categoriesRes] =
+        await Promise.all([
+          getProductsByShopId(sid),
+          getProductCountByShopId(sid),
+          getOrderCountByShopId(sid),
+          getProductTags(),
+          getProductBrands(),
+          getProductCategories(),
+        ]);
 
-  const handleDeleteProduct = (productId: string) => {
-    // In real app, this would make an API call
-    console.log("Deleting product:", productId)
-  }
+      if (prodRes.success && prodRes.data) {
+        setProducts(prodRes.data);
+        setFilteredProducts(prodRes.data);
+        setStats((s) => ({
+          ...s,
+          totalRevenue: (orderRes.data || 0) * 100, // Adjust as needed
+        }));
+      }
+      if (countRes.success)
+        setStats((s) => ({ ...s, totalProducts: countRes.data || 0 }));
+      if (orderRes.success)
+        setStats((s) => ({ ...s, totalOrders: orderRes.data || 0 }));
+      if (tagsRes.success) setTags(tagsRes.data || []);
+      if (brandsRes.success) setBrands(brandsRes.data || []);
+      if (categoriesRes.success) setCategories(categoriesRes.data || []);
+
+      setLoading(false);
+    };
+    fetchData();
+  }, [user.userId]);
+
+  // Filters
+  useEffect(() => {
+    let result = [...products];
+    if (filters.categories.length)
+      result = result.filter((p) =>
+        filters.categories.includes(p.categoryName)
+      );
+    if (filters.brands.length)
+      result = result.filter((p) => filters.brands.includes(p.brandName));
+    if (filters.tags.length)
+      result = result.filter((p) =>
+        p.tags.some((tag) => filters.tags.includes(tag))
+      );
+    result = result.filter(
+      (p) =>
+        p.price >= filters.priceRange[0] && p.price <= filters.priceRange[1]
+    );
+
+    switch (filters.sortBy) {
+      case "price-low":
+        result.sort((a, b) => a.price - b.price);
+        break;
+      case "price-high":
+        result.sort((a, b) => b.price - a.price);
+        break;
+      case "rating":
+        result.sort((a, b) => b.rating - a.rating);
+        break;
+      default:
+        result.sort(
+          (a, b) =>
+            new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
+        );
+    }
+
+    setFilteredProducts(result);
+  }, [products, filters]);
+
+  // Handle form input changes
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: name === "price" || name === "stockQuantity" ? Number(value) : value,
+    }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    setForm((prev) => ({ ...prev, imageUrl: file || null }));
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Initialize form when editing
+  useEffect(() => {
+    if (editing && shopId) {
+      setForm({
+        shopId: shopId,
+        productName: editing.productName,
+        description: editing.description,
+        price: editing.price,
+        stockQuantity: editing.stockQuantity || 0,
+        categoryId: editing.categoryId || "",
+        brandId: editing.brandId || "",
+        tagId: editing.tagId || "", // Updated to handle optional tagId
+        imageUrl: null,
+      });
+    } else if (shopId) {
+      setForm({
+        shopId: shopId,
+        productName: "",
+        description: "",
+        price: 0,
+        stockQuantity: 0,
+        categoryId: "",
+        brandId: "",
+        tagId: "",
+        imageUrl: null,
+      });
+    }
+  }, [editing, shopId]);
+
+  // CRUD handlers
+  const handleSubmit = async () => {
+    if (!shopId) {
+      setError("Shop ID is missing");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("ShopId", form.shopId);
+    formData.append("ProductName", form.productName);
+    formData.append("Description", form.description);
+    formData.append("Price", form.price.toString());
+    formData.append("StockQuantity", form.stockQuantity.toString());
+    formData.append("CategoryId", form.categoryId);
+    formData.append("BrandId", form.brandId);
+    formData.append("TagId", form.tagId);
+    if (form.imageUrl) {
+      formData.append("ImageUrl", form.imageUrl);
+    }
+
+    let res;
+    if (editing) {
+      res = await updateProduct(shopId, editing.productId, formData);
+    } else {
+      res = await addProduct(shopId, formData);
+    }
+
+    if (res.success && res.data) {
+      if (editing) {
+        setProducts((prev) =>
+          prev.map((p) => (p.productId === editing.productId ? res.data! : p))
+        );
+      } else {
+        setProducts((prev) => [...prev, res.data!]);
+      }
+      setIsDialogOpen(false);
+      setEditing(null);
+      setForm({
+        shopId: shopId,
+        productName: "",
+        description: "",
+        price: 0,
+        stockQuantity: 0,
+        categoryId: "",
+        brandId: "",
+        tagId: "",
+        imageUrl: null,
+      });
+      setError(null);
+    } else {
+      setError(res.message);
+    }
+  };
+
+  if (loading)
+    return (
+      <div className="flex h-screen items-center justify-center">
+        Loading...
+      </div>
+    );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Shop Dashboard</h1>
-          <p className="text-gray-600">Welcome back, {user.name}! Manage your products and track your sales.</p>
-        </div>
+    <div className="container mx-auto py-8">
+      <h1 className="text-3xl font-bold mb-6">Shop Dashboard</h1>
 
-        {/* Stats Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Products</p>
-                  <p className="text-2xl font-bold text-gray-900">{totalProducts}</p>
-                </div>
-                <Package className="h-8 w-8 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                  <p className="text-2xl font-bold text-gray-900">${totalRevenue}</p>
-                </div>
-                <DollarSign className="h-8 w-8 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Orders</p>
-                  <p className="text-2xl font-bold text-gray-900">{totalOrders}</p>
-                </div>
-                <ShoppingBag className="h-8 w-8 text-orange-600" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      {error && <p className="text-red-500 mb-4">{error}</p>}
 
-        {/* Main Content */}
-        <Tabs defaultValue="products" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="products">Products</TabsTrigger>
-            <TabsTrigger value="orders">Orders</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="profile">Shop Profile</TabsTrigger>
-          </TabsList>
+      {/* Stats */}
+      <div className="grid md:grid-cols-3 gap-4 mb-8">
+        <StatCard
+          title="Products"
+          value={stats.totalProducts}
+          icon={<Package />}
+        />
+        <StatCard
+          title="Revenue"
+          value={`$${stats.totalRevenue.toFixed(2)}`}
+          icon={<DollarSign />}
+        />
+        <StatCard
+          title="Orders"
+          value={stats.totalOrders}
+          icon={<ShoppingBag />}
+        />
+      </div>
 
-          {/* Products Tab */}
-          <TabsContent value="products" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Your Products</h2>
-              <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-orange-500 hover:bg-orange-600">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Product
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="name">Product Name</Label>
-                        <Input
-                          id="name"
-                          value={newProduct.name}
-                          onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                          placeholder="Enter product name"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="price">Price ($)</Label>
-                        <Input
-                          id="price"
-                          type="number"
-                          value={newProduct.price}
-                          onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
-                          placeholder="0.00"
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="category">Category</Label>
-                        <Select
-                          value={newProduct.category}
-                          onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Furniture">Furniture</SelectItem>
-                            <SelectItem value="Bowls">Bowls</SelectItem>
-                            <SelectItem value="Clothing">Clothing</SelectItem>
-                            <SelectItem value="Food">Food</SelectItem>
-                            <SelectItem value="Toys">Toys</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="brand">Brand</Label>
-                        <Input
-                          id="brand"
-                          value={newProduct.brand}
-                          onChange={(e) => setNewProduct({ ...newProduct, brand: e.target.value })}
-                          placeholder="Enter brand name"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="image">Product Image URL</Label>
-                      <Input
-                        id="image"
-                        value={newProduct.image}
-                        onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
-                        placeholder="https://example.com/image.jpg"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="description">Description</Label>
-                      <Textarea
-                        id="description"
-                        value={newProduct.description}
-                        onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
-                        placeholder="Enter product description"
-                        rows={3}
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={editingProduct ? handleUpdateProduct : handleAddProduct}
-                        className="bg-orange-500 hover:bg-orange-600"
-                      >
-                        {editingProduct ? "Update Product" : "Add Product"}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setIsAddProductOpen(false)
-                          setEditingProduct(null)
-                          setNewProduct({
-                            name: "",
-                            price: "",
-                            category: "",
-                            brand: "",
-                            description: "",
-                            image: "",
-                            tags: [],
-                          })
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
+      {/* Tabs */}
+      <Tabs defaultValue="products">
+
+        {/* Products */}
+        <TabsContent value="products">
+          <div className="flex justify-between mb-4">
+            <Button variant="ghost" className="mb-4" onClick={() => router.push("/shop")}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Shop
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{editing ? "Edit" : "Add"} Product</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-6">
+                  <div>
+                    <Label htmlFor="productName" className="mb-2">Product Name</Label>
+                    <Input
+                      id="productName"
+                      name="productName"
+                      value={form.productName}
+                      onChange={handleInputChange}
+                      placeholder="Enter product name"
+                      required
+                    />
                   </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {shopProducts.map((product) => (
-                <Card key={product.id} className="overflow-hidden">
-                  <div className="aspect-square relative">
-                    <Image src={product.image || "/placeholder.svg"} alt={product.name} fill className="object-cover" />
+                  <div>
+                    <Label htmlFor="description" className="mb-2">Description</Label>
+                    <Textarea
+                      id="description"
+                      name="description"
+                      value={form.description}
+                      onChange={handleInputChange}
+                      placeholder="Enter product description"
+                    />
                   </div>
-                  <CardContent className="p-4">
-                    <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
-                    <p className="text-2xl font-bold text-orange-500 mb-2">${product.price}</p>
-                    <div className="flex gap-2 mb-4">
-                      <Badge variant="secondary">{product.category}</Badge>
-                      <Badge variant="outline">{product.brand}</Badge>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => router.push(`/shop/edit/${product.id}`)}
-                        className="flex-1"
-                      >
-                        <Edit className="w-4 h-4 mr-1" />
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDeleteProduct(product.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* Orders Tab */}
-          <TabsContent value="orders">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Orders</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <ShoppingBag className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No orders yet. Your orders will appear here.</p>
+                  <div>
+                    <Label htmlFor="price" className="mb-2">Price</Label>
+                    <Input
+                      id="price"
+                      name="price"
+                      type="number"
+                      value={form.price}
+                      onChange={handleInputChange}
+                      placeholder="Enter price"
+                      min="0"
+                      step="0.01"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="stockQuantity" className="mb-2">Stock Quantity</Label>
+                    <Input
+                      id="stockQuantity"
+                      name="stockQuantity"
+                      type="number"
+                      value={form.stockQuantity}
+                      onChange={handleInputChange}
+                      placeholder="Enter stock quantity"
+                      min="0"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="categoryId" className="mb-2">Category</Label>
+                    <Select
+                      name="categoryId"
+                      value={form.categoryId}
+                      onValueChange={(value) =>
+                        handleSelectChange("categoryId", value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem
+                            key={category.categoryId}
+                            value={category.categoryId}
+                          >
+                            {category.categoryName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="brandId" className="mb-2">Brand</Label>
+                    <Select
+                      name="brandId"
+                      value={form.brandId}
+                      onValueChange={(value) =>
+                        handleSelectChange("brandId", value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a brand" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {brands.map((brand) => (
+                          <SelectItem
+                            key={brand.brandId}
+                            value={brand.brandId}
+                          >
+                            {brand.brandName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="tagId" className="mb-2">Tag</Label>
+                    <Select
+                      name="tagId"
+                      value={form.tagId}
+                      onValueChange={(value) =>
+                        handleSelectChange("tagId", value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a tag" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {tags.map((tag) => (
+                          <SelectItem
+                            key={tag.productTagId}
+                            value={tag.productTagId}
+                          >
+                            {tag.productTagName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="imageUrl" className="mb-2">Product Image</Label>
+                    <Input
+                      id="imageUrl"
+                      name="imageUrl"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                    />
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                <Button onClick={handleSubmit} className="w-full mt-4">
+                  {editing ? "Update" : "Add"}
+                </Button>
+              </DialogContent>
+            </Dialog>
+          </div>
 
-          {/* Analytics Tab */}
-          <TabsContent value="analytics">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" />
-                  Sales Analytics
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">Analytics dashboard coming soon. Track your sales performance here.</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Shop Profile Tab */}
-          <TabsContent value="profile">
-            <Card>
-              <CardHeader>
-                <CardTitle>Shop Profile</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="shopName">Shop Name</Label>
-                  <Input id="shopName" defaultValue={`${user.name}'s Pet Store`} />
-                </div>
-                <div>
-                  <Label htmlFor="shopDescription">Shop Description</Label>
-                  <Textarea
-                    id="shopDescription"
-                    placeholder="Tell customers about your shop..."
-                    rows={4}
-                    defaultValue="Welcome to our pet store! We offer high-quality products for your furry friends."
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredProducts.map((p) => (
+              <Card key={p.productId}>
+                <div className="relative h-40">
+                  <Image
+                    src={p.productImageUrl || "/placeholder.png"}
+                    alt={p.productName}
+                    fill
+                    className="object-cover"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="shopLocation">Location</Label>
-                  <Input id="shopLocation" placeholder="Enter your shop location" />
-                </div>
-                <div>
-                  <Label htmlFor="contactEmail">Contact Email</Label>
-                  <Input id="contactEmail" type="email" defaultValue={user.email} />
-                </div>
-                <Button className="bg-orange-500 hover:bg-orange-600">Update Profile</Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+                <CardContent>
+                  <h3 className="font-semibold">{p.productName}</h3>
+                  <p className="text-orange-600 font-bold">${p.price}</p>
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <Badge>{p.categoryName}</Badge>
+                    <Badge variant="outline">{p.brandName}</Badge>
+                    {p.tags.map((t, i) => (
+                      <Badge key={i} variant="secondary">
+                        {t}
+                      </Badge>
+                    ))}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="ml-auto"
+                      onClick={() => {
+                        setEditing(p);
+                        setIsDialogOpen(true);
+                      }}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        {/* Orders */}
+        <TabsContent value="orders">
+          <p>No orders yet.</p>
+        </TabsContent>
+      </Tabs>
     </div>
-  )
+  );
+}
+
+function StatCard({
+  title,
+  value,
+  icon,
+}: {
+  title: string;
+  value: any;
+  icon: React.ReactNode;
+}) {
+  return (
+    <Card>
+      <CardContent className="flex items-center justify-between p-4">
+        <div>
+          <p className="text-gray-500">{title}</p>
+          <p className="text-xl font-bold">{value}</p>
+        </div>
+        {icon}
+      </CardContent>
+    </Card>
+  );
 }

@@ -9,7 +9,7 @@ import { Calendar, Clock, Eye, Heart, Share2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { getBlogById, increaseView, toggleLike, hasUserLiked } from "@/components/api/blog";
-import { toast } from "@/components/ui/use-toast"; // Giả sử bạn dùng toast cho thông báo
+import { toast } from "@/components/ui/use-toast";
 import type { BlogDetailDTO } from "@/types/blog";
 
 export default function BlogPostPage() {
@@ -18,17 +18,7 @@ export default function BlogPostPage() {
   const [post, setPost] = useState<BlogDetailDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hasLiked, setHasLiked] = useState<boolean | null>(null);
-
-  // Lấy userId từ localStorage, giả định object được lưu dưới key "user"
-  let userId: string | null = null;
-  if (typeof window !== "undefined") {
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      userId = parsedUser.userId || parsedUser.id;
-    }
-  }
+  const [hasLiked, setHasLiked] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -37,12 +27,9 @@ export default function BlogPostPage() {
         await increaseView(blogId);
         const data = await getBlogById(blogId);
         setPost(data);
-        if (userId) {
-          const liked = await hasUserLiked(blogId, userId);
-          setHasLiked(liked);
-        } else {
-          setHasLiked(false);
-        }
+
+        const liked = await hasUserLiked(blogId);
+        setHasLiked(liked);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
         console.error("Fetch error:", err);
@@ -51,45 +38,43 @@ export default function BlogPostPage() {
       }
     };
     fetchData();
-  }, [blogId, userId]);
+  }, [blogId]);
 
-  // Sử dụng useCallback để tối ưu hóa handleToggleLike
   const handleToggleLike = useCallback(async () => {
-    if (!post || !userId) {
-      console.error("User not logged in or post not loaded");
-      toast({ title: "Error", description: "Please log in to like this post", variant: "destructive" });
+    if (!post) {
+      toast({ title: "Error", description: "Post not loaded", variant: "destructive" });
       return;
     }
     setLoading(true);
     try {
-      const { likeCount, hasLiked: newHasLiked } = await toggleLike(blogId, userId);
-      setPost((prev) => prev ? { ...prev, likeCount } : null);
+      const { likeCount, hasLiked: newHasLiked } = await toggleLike(blogId);
+      setPost((prev) => (prev ? { ...prev, likeCount } : null));
       setHasLiked(newHasLiked);
-      toast({ title: "Success", description: `Liked the post! (${likeCount} likes)` });
+      toast({
+        title: "Success",
+        description: newHasLiked ? "You liked the post" : "You unliked the post",
+      });
     } catch (err) {
       console.error("Error toggling like:", err);
-      toast({ title: "Error", description: "Failed to toggle like. Please try again.", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to toggle like", variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [post, userId, blogId, toast]); // Thêm dependency cần thiết
+  }, [post, blogId]);
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p className="text-center">Loading...</p>
-    </div>
-  );
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
 
-  if (error || !post) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold mb-4">Blog Post Not Found</h1>
-        <Link href="/blog">
-          <Button>Back to Blog</Button>
-        </Link>
+  if (error || !post)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Blog Post Not Found</h1>
+          <Link href="/blog">
+            <Button>Back to Blog</Button>
+          </Link>
+        </div>
       </div>
-    </div>
-  );
+    );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -154,7 +139,10 @@ export default function BlogPostPage() {
                   </div>
                 </div>
 
-                <div className="prose prose-lg max-w-none mb-8" dangerouslySetInnerHTML={{ __html: post.content }} />
+                <div
+                  className="prose prose-lg max-w-none mb-8"
+                  dangerouslySetInnerHTML={{ __html: post.content }}
+                />
 
                 <div className="mb-8">
                   <h3 className="font-semibold mb-3">Tags:</h3>
@@ -170,7 +158,7 @@ export default function BlogPostPage() {
                       size="sm"
                       className="flex items-center gap-2 bg-transparent"
                       onClick={handleToggleLike}
-                      disabled={loading || !userId}
+                      disabled={loading}
                     >
                       <Heart
                         className={`w-4 h-4 ${hasLiked ? "fill-red-500 text-red-500" : "text-gray-500"}`}

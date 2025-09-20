@@ -103,7 +103,7 @@ export default function ServicesPage() {
           </div>
           <div className="hidden md:block">
             <Image
-              src="/placeholder.svg?height=400&width=500"
+              src="/happy-person-dog.png?height=400&width=500"
               alt="Happy dog"
               width={500}
               height={400}

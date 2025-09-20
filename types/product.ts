@@ -1,25 +1,30 @@
-import { Review } from "./review"
+import { Review } from "./review";
 
 export interface Product {
-  productId: string
-  productName: string
-  price: number
-  productImageUrl: string
-  categoryName: string
-  brandName: string
-  tags: string[]
-  description: string
-  availabilityStatus: boolean
-  rating: number
-  categoryId?: string
-  brandId?: string
-  reviews: Review[]
+  productId: string;
+  productName: string;
+  price: number;
+  productImageUrl: string;
+  categoryName: string;
+  brandName: string;
+  tags: string[];
+  description: string;
+  availabilityStatus: boolean;
+  rating: number;
+  categoryId?: string;
+  brandId?: string;
+  tagId?: string; 
+  reviews: Review[];
+  stockQuantity?: number;
+  shopId?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ProductFilters {
-  categories: string[]
-  priceRange: [number, number]
-  brands: string[]
-  tags: string[] // list productTagId đang chọn
-  sortBy: "latest" | "price-low" | "price-high" | "rating"
+  categories: string[];
+  priceRange: [number, number];
+  brands: string[];
+  tags: string[]; // list productTagId đang chọn
+  sortBy: "latest" | "price-low" | "price-high" | "rating";
 }
