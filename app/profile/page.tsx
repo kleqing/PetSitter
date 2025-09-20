@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
@@ -13,94 +13,181 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { CalendarIcon, MapPinIcon, MailIcon, UserIcon, EditIcon, SaveIcon, XIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { updateProfile, changePassword } from "@/components/api/user";
+import { UserRole } from "@/enum/UserRole";
 
 export default function ProfilePage() {
-  const { user: authUser, logout } = useAuth(); // Thêm updateUser từ context
+  const { user: authUser, setUser, logout } = useAuth();
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
+    fullName: "",
     email: "",
+    phoneNumber: "",
     dateOfBirth: "",
     address: "",
   });
+  const [passwordData, setPasswordData] = useState({
+    oldPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [storedUser, setStoredUser] = useState<any>(null);
 
-  // Lấy thông tin từ localStorage khi tải trang
+  // Load dữ liệu từ localStorage chỉ trên client-side
   useEffect(() => {
-    const storedUser = typeof window !== "undefined" ? localStorage.getItem("user") : null;
-    if (storedUser) {
-      const userData = JSON.parse(storedUser);
+    if (typeof window !== "undefined") {
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        const parsedUser = JSON.parse(userData);
+        setStoredUser(parsedUser);
+        // Chỉ cập nhật formData nếu cần thiết
+        if (!authUser || JSON.stringify(formData) !== JSON.stringify({
+          fullName: parsedUser.fullName || "",
+          email: parsedUser.email || "",
+          phoneNumber: parsedUser.phoneNumber || "",
+          dateOfBirth: parsedUser.dateOfBirth || "",
+          address: parsedUser.address || "",
+        })) {
+          setFormData({
+            fullName: parsedUser.fullName || "",
+            email: parsedUser.email || "",
+            phoneNumber: parsedUser.phoneNumber || "",
+            dateOfBirth: parsedUser.dateOfBirth || "",
+            address: parsedUser.address || "",
+          });
+        }
+      }
+    }
+
+    // Ưu tiên dữ liệu từ authUser nếu có
+    if (authUser && JSON.stringify(formData) !== JSON.stringify({
+      fullName: authUser.fullName || "",
+      email: authUser.email || "",
+      phoneNumber: authUser.phoneNumber || "",
+      dateOfBirth: authUser.dateOfBirth || "",
+      address: authUser.address || "",
+    })) {
       setFormData({
-        name: userData.fullName || "",
-        email: userData.email || "",
-        dateOfBirth: userData.dateOfBirth || "",
-        address: userData.address || "",
-      });
-    } else if (authUser) {
-      setFormData({
-        name: authUser.name || "",
+        fullName: authUser.fullName || "",
         email: authUser.email || "",
+        phoneNumber: authUser.phoneNumber || "",
         dateOfBirth: authUser.dateOfBirth || "",
         address: authUser.address || "",
       });
     }
-  }, [authUser]);
 
-  // Redirect if not logged in
-  if (!authUser && !localStorage.getItem("user")) {
-    router.push("/login");
-    return null;
-  }
+    // Redirect nếu chưa đăng nhập
+    if (!authUser && !storedUser && typeof window !== "undefined" && !localStorage.getItem("user")) {
+      router.push("/login");
+    }
+  }, [authUser, router]); // Loại bỏ storedUser khỏi dependency để tránh vòng lặp
 
-  const handleSave = async () => {
+  const handleSaveProfile = async () => {
     try {
-      const userId = localStorage.getItem("userId") || authUser?.userId;
+      const userId = authUser?.userId || (storedUser?.userId ?? "");
       if (!userId) throw new Error("User ID not found");
 
-      // Giả định API endpoint để cập nhật thông tin người dùng
-      const response = await fetch(`https://localhost:7277/api/user/update/${userId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          fullName: formData.name,
-          email: formData.email,
-          dateOfBirth: formData.dateOfBirth,
-          address: formData.address,
-        }),
+      // Validation
+      if (!formData.fullName || formData.fullName.length < 2) {
+        throw new Error("Full name must be at least 2 characters");
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        throw new Error("Invalid email format");
+      }
+      if (formData.phoneNumber && !/^\d{10,12}$/.test(formData.phoneNumber)) {
+        throw new Error("Phone number must be 10-12 digits");
+      }
+
+      // Chuyển đổi dateOfBirth sang định dạng ISO
+      const dateOfBirth = formData.dateOfBirth ? new Date(formData.dateOfBirth).toISOString() : "";
+
+      const response = await updateProfile(userId, {
+        fullName: formData.fullName,
+        email: formData.email,
+        phoneNumber: formData.phoneNumber,
+        dateOfBirth: dateOfBirth,
+        address: formData.address,
       });
 
-      if (!response.ok) throw new Error("Failed to update profile");
+      // Cập nhật localStorage và context
+      const updatedUser = {
+        ...storedUser,
+        userId,
+        fullName: response.data?.fullName || formData.fullName,
+        email: response.data?.email || formData.email,
+        phoneNumber: response.data?.phoneNumber || formData.phoneNumber,
+        dateOfBirth: response.data?.dateOfBirth || formData.dateOfBirth,
+        address: response.data?.address || formData.address,
+        role: authUser?.role || storedUser?.role,
+        profilePictureUrl: authUser?.profilePictureUrl || storedUser?.profilePictureUrl,
+        createdAt: authUser?.createdAt || storedUser?.createdAt,
+      };
+      if (typeof window !== "undefined") {
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        setStoredUser(updatedUser);
+      }
+      setUser(updatedUser);
 
-      const updatedUser = await response.json();
-      // Cập nhật localStorage
-      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-      localStorage.setItem(
-        "user",
-        JSON.stringify({ ...storedUser, ...updatedUser, fullName: formData.name, email: formData.email, dateOfBirth: formData.dateOfBirth, address: formData.address })
-      );
-      // Cập nhật context nếu có
-      if (updateUser) updateUser({ ...authUser, ...formData });
       setIsEditing(false);
       setError(null);
-      console.log("[v0] Profile updated successfully:", formData);
+      setSuccess("Profile updated successfully");
+      console.log("[v0] Profile updated successfully:", response);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred while saving");
+      setError(err instanceof Error ? err.message : "An error occurred while saving profile");
       console.error("Error saving profile:", err);
     }
   };
 
+  const handleChangePassword = async () => {
+    try {
+      const userId = authUser?.userId || (storedUser?.userId ?? "");
+      if (!userId) throw new Error("User ID not found");
+
+      // Validation
+      if (passwordData.newPassword.length < 8) {
+        setError("New password must be at least 8 characters");
+        return;
+      }
+      if (passwordData.newPassword !== passwordData.confirmPassword) {
+        setError("New password and confirm password do not match");
+        return;
+      }
+
+      const response = await changePassword(userId, {
+        oldPassword: passwordData.oldPassword,
+        newPassword: passwordData.newPassword,
+        confirmPassword: passwordData.confirmPassword,
+      });
+
+      setPasswordData({ oldPassword: "", newPassword: "", confirmPassword: "" });
+      setIsChangingPassword(false);
+      setError(null);
+      setSuccess("Password changed successfully");
+      console.log("[v0] Password changed successfully:", response);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred while changing password");
+      console.error("Error changing password:", err);
+    }
+  };
+
   const handleCancel = () => {
+    const userData = authUser || storedUser;
     setFormData({
-      name: authUser?.name || (JSON.parse(localStorage.getItem("user") || "{}").fullName || ""),
-      email: authUser?.email || (JSON.parse(localStorage.getItem("user") || "{}").email || ""),
-      dateOfBirth: authUser?.dateOfBirth || (JSON.parse(localStorage.getItem("user") || "{}").dateOfBirth || ""),
-      address: authUser?.address || (JSON.parse(localStorage.getItem("user") || "{}").address || ""),
+      fullName: userData?.fullName || "",
+      email: userData?.email || "",
+      phoneNumber: userData?.phoneNumber || "",
+      dateOfBirth: userData?.dateOfBirth || "",
+      address: userData?.address || "",
     });
+    setPasswordData({ oldPassword: "", newPassword: "", confirmPassword: "" });
     setIsEditing(false);
+    setIsChangingPassword(false);
     setError(null);
+    setSuccess(null);
   };
 
   const getInitials = (name: string) => {
@@ -110,6 +197,8 @@ export default function ProfilePage() {
       .join("")
       .toUpperCase();
   };
+
+  const initials = useMemo(() => getInitials(formData.fullName), [formData.fullName]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -122,16 +211,22 @@ export default function ProfilePage() {
             <CardHeader className="text-center">
               <div className="flex flex-col items-center space-y-4">
                 <Avatar className="w-24 h-24">
-                  <AvatarImage src={authUser?.avatar || JSON.parse(localStorage.getItem("user") || "{}").profilePictureUrl || "/placeholder.svg"} alt={formData.name} />
+                  <AvatarImage
+                    src={authUser?.profilePictureUrl || storedUser?.profilePictureUrl || "/placeholder.svg"}
+                    alt={formData.fullName}
+                  />
                   <AvatarFallback className="text-2xl bg-orange-100 text-orange-600">
-                    {getInitials(formData.name)}
+                    {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <CardTitle className="text-2xl">{formData.name}</CardTitle>
+                  <CardTitle className="text-2xl">{formData.fullName}</CardTitle>
                   <CardDescription className="text-lg">{formData.email}</CardDescription>
-                  <Badge variant={JSON.parse(localStorage.getItem("user") || "{}").role === "shop" ? "default" : "secondary"} className="mt-2">
-                    {JSON.parse(localStorage.getItem("user") || "{}").role === "shop" ? "Shop Owner" : "Regular User"}
+                  <Badge
+                    variant={(authUser?.role || storedUser?.role) === UserRole.Shop ? "default" : "secondary"}
+                    className="mt-2"
+                  >
+                    {(authUser?.role || storedUser?.role) === UserRole.Shop ? "Shop Owner" : "Regular User"}
                   </Badge>
                 </div>
               </div>
@@ -154,7 +249,7 @@ export default function ProfilePage() {
                     </Button>
                   ) : (
                     <div className="flex space-x-2">
-                      <Button onClick={handleSave} size="sm" disabled={error !== null}>
+                      <Button onClick={handleSaveProfile} size="sm" disabled={error !== null}>
                         <SaveIcon className="w-4 h-4 mr-2" />
                         Save
                       </Button>
@@ -167,19 +262,20 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {error && <p className="text-red-500">{error}</p>}
+                  {success && <p className="text-green-500">{success}</p>}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name">Full Name</Label>
+                      <Label htmlFor="fullName">Full Name</Label>
                       {isEditing ? (
                         <Input
-                          id="name"
-                          value={formData.name}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          id="fullName"
+                          value={formData.fullName}
+                          onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                         />
                       ) : (
                         <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
                           <UserIcon className="w-4 h-4 text-gray-500" />
-                          <span>{formData.name}</span>
+                          <span>{formData.fullName}</span>
                         </div>
                       )}
                     </div>
@@ -202,12 +298,28 @@ export default function ProfilePage() {
                     </div>
 
                     <div className="space-y-2">
+                      <Label htmlFor="phoneNumber">Phone Number</Label>
+                      {isEditing ? (
+                        <Input
+                          id="phoneNumber"
+                          value={formData.phoneNumber}
+                          onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                        />
+                      ) : (
+                        <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
+                          <UserIcon className="w-4 h-4 text-gray-500" />
+                          <span>{formData.phoneNumber || "Not provided"}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
                       <Label htmlFor="dateOfBirth">Date of Birth</Label>
                       {isEditing ? (
                         <Input
                           id="dateOfBirth"
                           type="date"
-                          value={formData.dateOfBirth.split("T")[0]} // Chỉ lấy phần ngày
+                          value={formData.dateOfBirth ? formData.dateOfBirth.split("T")[0] : ""}
                           onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
                         />
                       ) : (
@@ -233,23 +345,82 @@ export default function ProfilePage() {
                         </div>
                       )}
                     </div>
-                  </div>
 
-                  <Separator />
-
-                  <div className="space-y-2">
-                    <Label>Account Type</Label>
-                    <div className="p-2 bg-gray-50 rounded">
-                      <Badge variant={JSON.parse(localStorage.getItem("user") || "{}").role === "shop" ? "default" : "secondary"}>
-                        {JSON.parse(localStorage.getItem("user") || "{}").role === "shop" ? "Shop Owner" : "Regular User"}
-                      </Badge>
+                    <div className="space-y-2">
+                      <Label>Account Type</Label>
+                      <div className="p-2 bg-gray-50 rounded">
+                        <Badge
+                          variant={(authUser?.role || storedUser?.role) === UserRole.Shop ? "default" : "secondary"}
+                        >
+                          {(authUser?.role || storedUser?.role) === UserRole.Shop ? "Shop Owner" : "Regular User"}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
 
-                  <div className="space-y-2">
-                    <Label>Member Since</Label>
-                    <div className="p-2 bg-gray-50 rounded">{new Date(JSON.parse(localStorage.getItem("user") || "{}").createdAt).toLocaleDateString()}</div>
+              {/* Change Password Section */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Change Password</CardTitle>
+                    <CardDescription>Update your account password</CardDescription>
                   </div>
+                  {!isChangingPassword ? (
+                    <Button onClick={() => setIsChangingPassword(true)} variant="outline" size="sm">
+                      <EditIcon className="w-4 h-4 mr-2" />
+                      Change
+                    </Button>
+                  ) : (
+                    <div className="flex space-x-2">
+                      <Button onClick={handleChangePassword} size="sm" disabled={error !== null}>
+                        <SaveIcon className="w-4 h-4 mr-2" />
+                        Save
+                      </Button>
+                      <Button onClick={handleCancel} variant="outline" size="sm">
+                        <XIcon className="w-4 h-4 mr-2" />
+                        Cancel
+                      </Button>
+                    </div>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {isChangingPassword && (
+                    <>
+                      {error && <p className="text-red-500">{error}</p>}
+                      {success && <p className="text-green-500">{success}</p>}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="oldPassword">Old Password</Label>
+                          <Input
+                            id="oldPassword"
+                            type="password"
+                            value={passwordData.oldPassword}
+                            onChange={(e) => setPasswordData({ ...passwordData, oldPassword: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="newPassword">New Password</Label>
+                          <Input
+                            id="newPassword"
+                            type="password"
+                            value={passwordData.newPassword}
+                            onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="confirmPassword">Confirm Password</Label>
+                          <Input
+                            id="confirmPassword"
+                            type="password"
+                            value={passwordData.confirmPassword}
+                            onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -262,7 +433,11 @@ export default function ProfilePage() {
                   <CardDescription>Manage your account settings</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Button variant="outline" className="w-full justify-start bg-transparent">
+                  <Button
+                    onClick={() => setIsChangingPassword(true)}
+                    variant="outline"
+                    className="w-full justify-start bg-transparent"
+                  >
                     Change Password
                   </Button>
                   <Button variant="outline" className="w-full justify-start bg-transparent">
@@ -278,7 +453,7 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
 
-              {JSON.parse(localStorage.getItem("user") || "{}").role === "shop" && (
+              {(authUser?.role || storedUser?.role) === UserRole.Shop && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Shop Owner Tools</CardTitle>

@@ -27,17 +27,25 @@ export default function ServicesPage() {
     priceRange: PriceRange;
   }>({
     tagId: "",
-    location: "",
+    location: "all",
     priceRange: "all",
   });
+
+  // Danh sách locations động
+  const [locations, setLocations] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
         const { services, tags } = await getListServices();
+        console.log("Fetched services:", services.map(s => ({ serviceId: s.serviceId, serviceImageUrl: s.serviceImageUrl }))); // Debug
         setServices(services);
         setTags(tags);
+
+        // Tính toán danh sách locations duy nhất từ service.shop.location
+        const uniqueLocations = [...new Set(services.map((s) => s.shop?.location).filter((loc): loc is string => loc !== undefined))];
+        setLocations(uniqueLocations);
       } catch (err) {
         console.error("Error fetching:", err);
       } finally {
@@ -50,7 +58,7 @@ export default function ServicesPage() {
   const filteredServices = services.filter((s) => {
     let match = true;
     if (filters.tagId && s.tagId !== filters.tagId) match = false;
-    if (filters.location && !s.description.toLowerCase().includes(filters.location.toLowerCase())) match = false;
+    if (filters.location && filters.location !== "all" && s.shop?.location !== filters.location) match = false;
     if (filters.priceRange !== "all") {
       switch (filters.priceRange) {
         case "below10":
@@ -139,9 +147,12 @@ export default function ServicesPage() {
                   <SelectValue placeholder="Select location" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  <SelectItem value="Sai Gon, Viet Nam">Sai Gon, Viet Nam</SelectItem>
-                  <SelectItem value="Ha Noi, Viet Nam">Ha Noi, Viet Nam</SelectItem>
-                  <SelectItem value="Da Nang, Viet Nam">Da Nang, Viet Nam</SelectItem>
+                  <SelectItem value="all">All Locations</SelectItem>
+                  {locations.map((loc) => (
+                    <SelectItem key={loc} value={loc}>
+                      {loc}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -172,7 +183,7 @@ export default function ServicesPage() {
       <section className="py-12">
         <div className="container mx-auto px-4">
           <h3 className="text-2xl font-bold mb-8">
-            Browse {filteredServices.length} Services near you in {filters.location || "Any Location"}
+            Browse {filteredServices.length} Services near you in {filters.location === "all" ? "Any Location" : filters.location}
           </h3>
 
           <div className="grid gap-6">
@@ -188,13 +199,23 @@ export default function ServicesPage() {
                   <CardContent className="p-6 flex gap-6">
                     {/* Image */}
                     <div className="flex-shrink-0">
-                      <Image
-                        src={service.serviceImageUrl[0] || "/placeholder.svg"}
-                        alt={service.serviceName}
-                        width={120}
-                        height={120}
-                        className="rounded-lg object-cover"
-                      />
+                      {service.serviceImageUrl && Array.isArray(service.serviceImageUrl) && service.serviceImageUrl.length > 0 && typeof service.serviceImageUrl[0] === "string" && service.serviceImageUrl[0].trim() !== "" ? (
+                        <Image
+                          src={service.serviceImageUrl[0]} // Lấy phần tử đầu tiên từ mảng
+                          alt={service.serviceName}
+                          width={120}
+                          height={120}
+                          className="rounded-lg object-cover"
+                        />
+                      ) : (
+                        <Image
+                          src="/placeholder.svg"
+                          alt={service.serviceName}
+                          width={120}
+                          height={120}
+                          className="rounded-lg object-cover"
+                        />
+                      )}
                     </div>
 
                     {/* Info */}
@@ -204,7 +225,7 @@ export default function ServicesPage() {
                           <h4 className="text-xl font-semibold">{service.serviceName}</h4>
                           <p className="text-gray-600 flex items-center gap-1">
                             <MapPin className="w-4 h-4" />
-                            {filters.location || "Unknown Location"}
+                            {service.shop?.location || "Unknown Location"}
                           </p>
                         </div>
                         <div className="text-right">

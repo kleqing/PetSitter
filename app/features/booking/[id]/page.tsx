@@ -29,9 +29,11 @@ export default function BookingPage() {
         });
         if (!res.ok) throw new Error("Failed to fetch service details");
         const result = await res.json();
+        console.log("Fetched service data:", result.data); // Debug dữ liệu
         setService(result.data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
+        console.error("Fetch error:", err);
       } finally {
         setLoading(false);
       }
@@ -69,6 +71,15 @@ export default function BookingPage() {
     ? service.serviceReviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount
     : 0;
 
+  // Xử lý serviceImageUrl linh hoạt với cả chuỗi và mảng
+  const serviceImageUrl = service.serviceImageUrl
+    ? Array.isArray(service.serviceImageUrl)
+      ? service.serviceImageUrl[0] || "/placeholder.svg"
+      : typeof service.serviceImageUrl === "string" && service.serviceImageUrl.trim() !== ""
+        ? service.serviceImageUrl
+        : "/placeholder.svg"
+    : "/placeholder.svg"; 
+
   return (
     <>
       <Navigation />
@@ -89,7 +100,7 @@ export default function BookingPage() {
               {/* Header */}
               <div className="flex items-start gap-4">
                 <Image
-                  src="/placeholder.svg" // Thay bằng shopImageUrl nếu có
+                  src={service.shop?.shopImageUrl || "/placeholder.svg"}
                   alt={service.shop?.shopName || "Shop"}
                   width={80}
                   height={80}
@@ -112,18 +123,16 @@ export default function BookingPage() {
               </div>
 
               {/* Image Gallery */}
-              <Card>
-                <CardContent className="p-6">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="cursor-pointer rounded-lg overflow-hidden">
-                      <Image
-                        src={service.serviceImageUrl instanceof Array ? service.serviceImageUrl[0] : service.serviceImageUrl || "/placeholder.svg"}
-                        alt={`${service.serviceName} photo`}
-                        width={500}
-                        height={500}
-                        className="w-full h-32 object-cover hover:scale-105 transition-transform"
-                      />
-                    </div>
+              <Card className="overflow-hidden shadow-lg">
+                <CardContent className="p-0">
+                  <div className="relative w-full h-96">
+                    <Image
+                      src={serviceImageUrl}
+                      alt={`${service.serviceName} photo`}
+                      fill
+                      className="object-cover transition-transform duration-300 hover:scale-105 rounded-lg"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -156,7 +165,7 @@ export default function BookingPage() {
                   {service.serviceReviews.map((review) => (
                     <div key={review.reviewId} className="flex gap-4">
                       <Image
-                        src="/placeholder.svg" // Thay bằng profilePictureUrl nếu có
+                        src={review.users?.profilePictureUrl || "/placeholder.svg"}
                         alt={review.users?.fullName || "User"}
                         width={40}
                         height={40}
@@ -200,7 +209,7 @@ export default function BookingPage() {
                 <CardContent className="p-6 text-center">
                   <h3 className="font-semibold text-lg mb-2">{service.serviceName}</h3>
                   <p className="text-sm text-gray-600 mb-4">
-                    From ${service.pricePerPerson}/{service.serviceId.split("-")[0]} {/* Giả định đơn vị */}
+                    From ${service.pricePerPerson}
                   </p>
                   <Link href={`/features/booking/${service.serviceId}`}>
                     <Button className="w-full bg-orange-500 hover:bg-orange-600 mb-2">Make Reservation</Button>

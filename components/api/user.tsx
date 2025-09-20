@@ -1,15 +1,36 @@
+// components/api/user.tsx
 import { User } from "@/types/user";
 
-export async function updateUser(user: User): Promise<User> {
-    const response = await fetch(`/api/users/${user.id}`, {
-        method: 'PUT',
+export const updateProfile = async (userId: string, data: { fullName: string; phoneNumber: string; email: string; dateOfBirth: string; address: string }) => {
+    const response = await fetch(`https://localhost:7277/api/user/update-profile`, {
+        method: "PUT",
         headers: {
-            'Content-Type': 'application/json',
+        "Content-Type": "application/json-patch+json",
+        accept: "*/*",
         },
-        body: JSON.stringify(user),
+        body: JSON.stringify({ ...data, userId }),
     });
+
     if (!response.ok) {
-        throw new Error("Failed to update user");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update profile");
     }
     return response.json();
-}
+};
+
+export const changePassword = async (userId: string, data: { oldPassword: string; newPassword: string; confirmPassword: string }) => {
+    const response = await fetch(`https://localhost:7277/api/user/change-password`, {
+        method: "PUT",
+        headers: {
+        "Content-Type": "application/json-patch+json",
+        accept: "*/*",
+        },
+        body: JSON.stringify({ ...data, userId }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to change password");
+    }
+    return response.json();
+};
