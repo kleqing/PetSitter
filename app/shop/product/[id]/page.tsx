@@ -11,7 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Heart, Star, ShoppingCart, Minus, Plus, ArrowLeft } from "lucide-react"
 import { getProductById, getRelatedProduct, productReview } from "@/components/api/product" 
 import type { Product } from "@/types/product"
-import { Review } from "@/types/review"
+import type { Review } from "@/types/review"
+import { useCart } from "@/contexts/cart-context" 
+import { toast } from "sonner" 
 
 export default function ProductDetailPage() {
   const params = useParams()
@@ -24,6 +26,13 @@ export default function ProductDetailPage() {
   const [reviews, setReviews] = useState<Review[]>([])
   const [loadingReviews, setLoadingReviews] = useState(false)
   const [averageRating, setAverageRating] = useState<number>(0)
+  const { addToCart } = useCart() // Lấy hàm addToCart từ context
+
+  const handleAddToCart = () => {
+    if (!product) return;
+    addToCart(product, quantity);
+    toast.success(`${product.productName} has been added to your cart!`);
+  };
 
   useEffect(() => {
     if (reviews.length > 0) {
@@ -185,7 +194,8 @@ export default function ProductDetailPage() {
               </div>
 
               <div className="flex space-x-4">
-                <Button className="flex-1 bg-orange-500 hover:bg-orange-600" disabled={!product.availabilityStatus}>
+                <Button className="flex-1 bg-orange-500 hover:bg-orange-600" disabled={!product.availabilityStatus}
+                onClick={handleAddToCart}>
                   <ShoppingCart className="w-4 h-4 mr-2" />
                   Add to Cart
                 </Button>
