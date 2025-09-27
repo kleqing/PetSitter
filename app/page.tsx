@@ -12,7 +12,6 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
       <Navigation />
-
       {/* Hero Section */}
       <section className="relative bg-gradient-to-r from-orange-100 to-orange-200 overflow-hidden">
         <div className="absolute inset-0">

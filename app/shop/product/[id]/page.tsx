@@ -9,9 +9,20 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Heart, Star, ShoppingCart, Minus, Plus, ArrowLeft } from "lucide-react"
-import { getProductById, getRelatedProduct, productReview } from "@/components/api/product" 
+import { getProductById, getRelatedProduct, productReview, writeProductReview } from "@/components/api/product" 
 import type { Product } from "@/types/product"
-import { Review } from "@/types/review"
+import type { Review } from "@/types/review"
+import { useCart } from "@/contexts/cart-context" 
+import { toast } from "sonner" 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
 
 export default function ProductDetailPage() {
   const params = useParams()
@@ -24,6 +35,49 @@ export default function ProductDetailPage() {
   const [reviews, setReviews] = useState<Review[]>([])
   const [loadingReviews, setLoadingReviews] = useState(false)
   const [averageRating, setAverageRating] = useState<number>(0)
+  const { addToCart } = useCart() // Lấy hàm addToCart từ context
+
+  const [open, setOpen] = useState(false)
+  const [rating, setRating] = useState(0)
+  const [comment, setComment] = useState("")
+
+  const handleSubmitReview = async () => {
+    if (!product) return
+
+    try {
+      // Lấy user từ localStorage
+      const userData = localStorage.getItem("user")
+      if (!userData) {
+        toast.error("You must be logged in to write a review")
+        return
+      }
+
+      const user = JSON.parse(userData)
+
+      const result = await writeProductReview({
+        userId: user.userId,
+        productId: product.productId,
+        context: comment,
+        rating,
+      })
+
+      toast.success("Review submitted successfully!")
+      // refresh lại reviews
+      setReviews((prev) => [...prev, result.data])
+      setOpen(false)
+      setRating(0)
+      setComment("")
+      router.refresh();
+    } catch (err) {
+      toast.error("Failed to submit review")
+    }
+  }
+
+  const handleAddToCart = () => {
+    if (!product) return;
+    addToCart(product, quantity);
+    toast.success(`${product.productName} has been added to your cart!`);
+  };
 
   useEffect(() => {
     if (reviews.length > 0) {
@@ -185,7 +239,8 @@ export default function ProductDetailPage() {
               </div>
 
               <div className="flex space-x-4">
-                <Button className="flex-1 bg-orange-500 hover:bg-orange-600" disabled={!product.availabilityStatus}>
+                <Button className="flex-1 bg-orange-500 hover:bg-orange-600" disabled={!product.availabilityStatus}
+                onClick={handleAddToCart}>
                   <ShoppingCart className="w-4 h-4 mr-2" />
                   Add to Cart
                 </Button>
@@ -220,60 +275,88 @@ export default function ProductDetailPage() {
             </Card>
           </TabsContent>
           <TabsContent value="reviews" className="mt-6">
-          <Card>
-            <CardContent className="p-6">
-              {loadingReviews ? (
-                <p>Loading reviews...</p>
-              ) : reviews.length === 0 ? (
-                <p className="text-gray-500">No reviews yet</p>
-              ) : (
-                <div className="space-y-4">
-                  {reviews.map((review) => (
-                    <div
-                      key={review.reviewId}
-                      className="flex space-x-3 border-b pb-4 last:border-b-0"
-                    >
-                      {/* Avatar */}
-                      <img
-                        src={review.users.profilePictureUrl || "/placeholder.svg"}
-                        alt={review.users.fullName}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-
-                      {/* Nội dung */}
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-medium">{review.users.fullName}</span>
-                          <span className="text-sm text-gray-500">
-                            {new Date(review.createdAt).toLocaleDateString()}
-                          </span>
+            <Card>
+              <CardContent className="p-6">
+                {reviews.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 gap-4">
+                    <p className="text-muted-foreground">No reviews yet.</p>
+                    <Button onClick={() => setOpen(true)}>Write a Review</Button>
+                  </div>
+                ) : (
+                  <>
+                    {reviews.map((review) => (
+                      <div key={review.reviewId} className="flex items-start gap-4 border-b py-4">
+                        <img
+                          src={review.users?.profilePictureUrl || "/placeholder.svg"}
+                          alt={review.users?.fullName || "Anonymous"}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium">{review.users?.fullName || "Anonymous"}</p>
+                              <div className="flex">
+                                {Array.from({ length: 5 }, (_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={`w-4 h-4 ${
+                                      i < review.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            <span className="text-sm text-gray-500">
+                              {new Date(review.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="mt-2">{review.comment}</p>
                         </div>
-
-                        {/* Stars */}
-                        <div className="flex items-center mb-2">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-4 h-4 ${
-                                i < review.rating
-                                  ? "fill-yellow-400 text-yellow-400"
-                                  : "text-gray-300"
-                              }`}
-                            />
-                          ))}
-                        </div>
-
-                        {/* Comment */}
-                        <br />
-                        <p className="text-gray-600">{review.comment}</p>
                       </div>
+                    ))}
+
+                    {/* nút viết review ở dưới cùng */}
+                    <div className="flex justify-center py-6">
+                      <Button onClick={() => setOpen(true)}>Write a Review</Button>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                  </>
+                )}
+
+                {/* Dialog viết review */}
+                <Dialog open={open} onOpenChange={setOpen}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Write a Review</DialogTitle>
+                    </DialogHeader>
+
+                    {/* Rating */}
+                    <div className="flex space-x-1 mb-4">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-6 h-6 cursor-pointer ${
+                            i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+                          }`}
+                          onClick={() => setRating(i + 1)}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Comment */}
+                    <Textarea
+                      placeholder="Share your thoughts..."
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                    />
+
+                    <DialogFooter>
+                      <Button onClick={handleSubmitReview}>Submit</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="shipping" className="mt-6">
             <Card>

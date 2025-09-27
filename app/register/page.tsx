@@ -15,7 +15,7 @@ import { useCountries, useStates, Country, State } from "@/components/api/locati
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
-    name: "",
+    fullName: "",
     email: "",
     phoneNumber: "",
     password: "",
@@ -25,7 +25,9 @@ export default function RegisterPage() {
     state: "",
     address: "",
     shopName: "",
-    description: ""
+    description: "",
+    bankName: "",
+    bankNumber: "",
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -33,6 +35,22 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const { register, loginWithGoogle, loading } = useAuth();
   const router = useRouter();
+
+  const banks = [
+  "Vietcombank",
+  "VietinBank",
+  "BIDV",
+  "Agribank",
+  "Techcombank",
+  "ACB",
+  "Sacombank",
+  "MB Bank",
+  "VPBank",
+  "SHB",
+  "TPBank",
+  "Eximbank",
+  "HDBank",
+];
 
   const { countries, error: countryError } = useCountries();
   const { states: availableStates, error: stateError } = useStates(formData.country);
@@ -111,13 +129,13 @@ export default function RegisterPage() {
           )}
 
           <div>
-            <Label htmlFor="name">What should we call you?</Label>
+            <Label htmlFor="fullName">What should we call you?</Label>
             <Input
-              id="name"
+              id="fullName"
               type="text"
               placeholder="Enter your profile name"
-              value={formData.name}
-              onChange={(e) => handleInputChange("name", e.target.value)}
+              value={formData.fullName}
+              onChange={(e) => handleInputChange("fullName", e.target.value)}
               required
               className="mt-1"
             />
@@ -259,7 +277,7 @@ export default function RegisterPage() {
                   placeholder="Enter your shop name"
                   value={formData.shopName}
                   onChange={(e) => handleInputChange("shopName", e.target.value)}
-                  required // Yêu cầu khi là ShopOwner
+                  required 
                   className="mt-1"
                 />
               </div>
@@ -272,10 +290,44 @@ export default function RegisterPage() {
                   placeholder="Describe your shop"
                   value={formData.description}
                   onChange={(e) => handleInputChange("description", e.target.value)}
-                  required // Yêu cầu khi là ShopOwner
+                  required 
                   className="mt-1"
                 />
               </div>
+
+              
+              <div>
+                <Label htmlFor="bankName">Bank Name</Label>
+                <Select
+                  value={formData.bankName}
+                  onValueChange={(value) => handleInputChange("bankName", value)}
+                >
+                  <SelectTrigger className="mt-1 w-full">
+                    <SelectValue placeholder="Choose your bank" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {banks.map((bank) => (
+                      <SelectItem key={bank} value={bank}>
+                        {bank}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="bankNumber">Bank Account</Label>
+                <Input
+                  id="bankNumber"
+                  type="text"
+                  placeholder="Enter your shop bank account"
+                  value={formData.bankNumber}
+                  onChange={(e) => handleInputChange("bankNumber", e.target.value)}
+                  required 
+                  className="mt-1"
+                />
+              </div>
+
             </>
           )}
 
