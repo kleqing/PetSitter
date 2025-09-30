@@ -16,7 +16,7 @@ function getCurrentUser() {
 }
 
 export async function getAllBlogs(): Promise<Blog[]> {
-  const res = await fetch("https://localhost:7277/api/blog/getallblogs", {
+  const res = await fetch("https://petsitter.runasp.net/api/blog/getallblogs", {
     method: "GET",
     headers: { "Content-Type": "application/json" },
   });
@@ -30,7 +30,7 @@ export async function getAllBlogs(): Promise<Blog[]> {
 }
 
 export async function getBlogTags(): Promise<BlogTag[]> {
-  const res = await fetch("https://localhost:7277/api/filter/blog-tags", {
+  const res = await fetch("https://petsitter.runasp.net/api/filter/blog-tags", {
     method: "GET",
     headers: { "Content-Type": "application/json" },
   });
@@ -48,7 +48,7 @@ export async function getBlogById(blogId: string): Promise<BlogDetailDTO> {
   const userId = user?.userId ?? "00000000-0000-0000-0000-000000000000";
 
   const res = await fetch(
-    `https://localhost:7277/api/blog/getblogbyid/${blogId}?userId=${userId}`,
+    `https://petsitter.runasp.net/api/blog/getblogbyid/${blogId}?userId=${userId}`,
     {
       method: "GET",
       headers: { "Content-Type": "application/json" },
@@ -64,7 +64,7 @@ export async function getBlogById(blogId: string): Promise<BlogDetailDTO> {
 }
 
 export async function increaseView(blogId: string): Promise<Blog> {
-  const res = await fetch(`https://localhost:7277/api/blog/increaseview/${blogId}`, {
+  const res = await fetch(`https://petsitter.runasp.net/api/blog/increaseview/${blogId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
   });
@@ -83,7 +83,7 @@ export async function toggleLike(blogId: string): Promise<{ likeCount: number; h
   if (!user) throw new Error("User not found in localStorage");
 
   const res = await fetch(
-    `https://localhost:7277/api/blog/togglelike/${blogId}?userId=${user.userId}`,
+    `https://petsitter.runasp.net/api/blog/togglelike/${blogId}?userId=${user.userId}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -103,7 +103,7 @@ export async function hasUserLiked(blogId: string): Promise<boolean> {
   if (!user) return false;
 
   const res = await fetch(
-    `https://localhost:7277/api/blog/hasuserliked/${blogId}?userId=${user.userId}`,
+    `https://petsitter.runasp.net/api/blog/hasuserliked/${blogId}?userId=${user.userId}`,
     {
       method: "GET",
       headers: { "Content-Type": "application/json" },
@@ -119,7 +119,7 @@ export async function hasUserLiked(blogId: string): Promise<boolean> {
 }
 
 export async function createBlog(authorId: string, formData: FormData) {
-  const res = await fetch(`https://localhost:7277/api/blog/${authorId}/create`, {
+  const res = await fetch(`https://petsitter.runasp.net/api/blog/${authorId}/create`, {
     method: "POST",
     body: formData,
   });
@@ -129,7 +129,7 @@ export async function createBlog(authorId: string, formData: FormData) {
 }
 
 export async function getBlogCategories(): Promise<{ categoryId: string; categoryName: string }[]> {
-  const res = await fetch("https://localhost:7277/api/filter/blog-categories", {
+  const res = await fetch("https://petsitter.runasp.net/api/filter/blog-categories", {
     method: "GET",
     headers: { "Content-Type": "application/json" },
   });

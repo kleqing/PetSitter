@@ -1,5 +1,5 @@
 export async function getProductCategories() {
-    const res = await fetch("https://localhost:7277/api/filter/product-categories", {
+    const res = await fetch("https://petsitter.runasp.net/api/filter/product-categories", {
         cache: "no-store",
     });
     if (!res.ok) throw new Error("Failed to fetch categories");
@@ -8,7 +8,7 @@ export async function getProductCategories() {
 }
 
 export async function getProductBrands() {
-    const res = await fetch("https://localhost:7277/api/filter/product-brands", {
+    const res = await fetch("https://petsitter.runasp.net/api/filter/product-brands", {
         cache: "no-store",
     });
     if (!res.ok) throw new Error("Failed to fetch brands");
@@ -17,7 +17,7 @@ export async function getProductBrands() {
 }
 
 export async function getProductTags() {
-    const res = await fetch("https://localhost:7277/api/filter/product-tags", {
+    const res = await fetch("https://petsitter.runasp.net/api/filter/product-tags", {
         cache: "no-store",
     });
     if (!res.ok) throw new Error("Failed to fetch tags");

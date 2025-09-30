@@ -54,7 +54,7 @@ export default function CheckoutPage() {
     // app/checkout/page.tsx -> trong hàm handlePlaceOrder
 
 try {
-  const response = await fetch("https://localhost:7277/api/orders/checkout", { 
+  const response = await fetch("https://petsitter.runasp.net/api/orders/checkout", { 
     method: 'POST',
     headers: { 
       'Content-Type': 'application/json', 
@@ -138,13 +138,13 @@ try {
                     <img src={item.productImageUrl} alt={item.productName} className="w-10 h-10 object-cover rounded mr-3"/>
                     <span>{item.productName} <span className="text-gray-500">x {item.quantity}</span></span>
                   </div>
-                  <span>${(item.price * item.quantity).toFixed(2)}</span>
+                  <span>{new Intl.NumberFormat("vi-VN").format(item.price * item.quantity)}</span>
                 </div>
               ))}
             </div>
             <div className="flex justify-between font-bold text-lg">
               <span>Total</span>
-              <span>${total.toFixed(2)}</span>
+              <span>{new Intl.NumberFormat("vi-VN").format(total)}</span>
             </div>
             <Button 
               className="w-full mt-6"
