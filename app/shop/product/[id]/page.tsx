@@ -267,9 +267,7 @@ export default function ProductDetailPage() {
             <Card>
               <CardContent className="p-6">
                 <p className="text-gray-600 leading-relaxed">
-                  {product.description} This high-quality pet product is designed with your furry friend's comfort and
-                  safety in mind. Made from premium materials and tested for durability, it's the perfect addition to
-                  your pet care routine.
+                  {product.description}
                 </p>
               </CardContent>
             </Card>
