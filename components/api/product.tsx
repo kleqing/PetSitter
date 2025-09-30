@@ -136,3 +136,19 @@ export async function productReview(productId: string): Promise<Review[]> {
         }
     }))
 }
+
+export async function writeProductReview(review: {
+    userId: string
+    productId: string
+    context: string
+    rating: number
+}) {
+    const res = await fetch("https://localhost:7277/api/product/write-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(review),
+    })
+
+    if (!res.ok) throw new Error("Failed to write review")
+    return res.json()
+}

@@ -11,7 +11,97 @@ import { Footer } from "@/components/footer";
 import Image from "next/image";
 import Link from "next/link";
 import type { Service } from "@/types/feature"; // Đảm bảo import type từ types/feature.ts
+import { useAuth } from "@/contexts/auth-context";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import router from "next/router";
 
+function WriteReviewDialog({ serviceId, onReviewAdded }: { serviceId: string, onReviewAdded: (review: any) => void }) {
+  const [open, setOpen] = useState(false)
+  const [rating, setRating] = useState(0)
+  const [comment, setComment] = useState("")
+  const [loading, setLoading] = useState(false)
+  const { user } = useAuth()
+
+  const handleSubmit = async () => {
+    if (!user) return alert("Please login first")
+    setLoading(true)
+    try {
+      const res = await fetch("https://localhost:7277/api/service/write-review", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: user.userId,
+          serviceId: serviceId,
+          context: comment,
+          rating: rating,
+        }),
+      })
+
+      const result = await res.json()
+      if (result.success) {
+        onReviewAdded(result.data) // update review list
+        setOpen(false)
+        setComment("")
+        setRating(0)
+        router.reload();
+      } else {
+        alert(result.message || "Failed to submit review")
+      }
+    } catch (err) {
+      console.error(err)
+      alert("Error submitting review")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <>
+      <Button variant="outline" className="text-orange-500 border-orange-500 hover:bg-orange-50" onClick={() => setOpen(true)}>
+        Write a Review
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Write a Review</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Rating stars */}
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Star
+                  key={i}
+                  className={`w-6 h-6 cursor-pointer ${i <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+                  onClick={() => setRating(i)}
+                />
+              ))}
+            </div>
+            <Textarea
+              placeholder="Write your review..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button onClick={handleSubmit} disabled={loading}>
+              {loading ? "Submitting..." : "Submit"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
+  
 export default function BookingPage() {
   const params = useParams();
   const serviceId = params.id as string;
@@ -157,9 +247,14 @@ export default function BookingPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-lg">{reviewCount} Review{reviewCount !== 1 ? "s" : ""}</CardTitle>
-                  <Button variant="outline" className="text-orange-500 border-orange-500 hover:bg-orange-50">
-                    Write a Review
-                  </Button>
+                  <WriteReviewDialog
+                    serviceId={service.serviceId}
+                    onReviewAdded={(newReview) => {
+                      setService((prev) =>
+                        prev ? { ...prev, serviceReviews: [...prev.serviceReviews, newReview] } : prev
+                      )
+                    }}
+                  />
                 </CardHeader>
                 <CardContent className="p-6 pt-0 space-y-4">
                   {service.serviceReviews.map((review) => (
@@ -200,7 +295,6 @@ export default function BookingPage() {
                   <h3 className="font-semibold text-lg mb-2">Talk & Greet</h3>
                   <p className="text-sm text-gray-600 mb-4">Get to know each other first</p>
                   <Button className="w-full bg-purple-500 hover:bg-purple-600 mb-2">Contact</Button>
-                  <Badge className="bg-green-400 text-green-900">FREE</Badge>
                 </CardContent>
               </Card>
 
@@ -208,11 +302,23 @@ export default function BookingPage() {
               <Card className="bg-orange-100">
                 <CardContent className="p-6 text-center">
                   <h3 className="font-semibold text-lg mb-2">{service.serviceName}</h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    From ${service.pricePerPerson}
-                  </p>
-                  <Link href={`/features/booking/${service.serviceId}`}>
-                    <Button className="w-full bg-orange-500 hover:bg-orange-600 mb-2">Make Reservation</Button>
+                  {service.pricePerPerson === 0 ? (
+                    <>
+                      <p className="text-sm text-gray-500">Please contact the shop for the service price</p>
+                      <br  />
+                    </>
+                  )
+                  : (
+                    <p className="text-3xl font-bold text-orange-600 mb-2">
+                      ${service.pricePerPerson
+                        .toFixed(2)
+                        .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                    </p>
+                  )}
+                  <Link href={service.shop?.socialMediaLinks || "#"} target="_blank">
+                    <Button className="w-full bg-orange-500 hover:bg-orange-600 mb-2">
+                      Shop profile
+                    </Button>
                   </Link>
                 </CardContent>
               </Card>

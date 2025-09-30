@@ -67,7 +67,7 @@ export function ProductCard({ product }: ProductCardProps) {
             {/* Giá */}
             <div className="flex items-center justify-between">
               <span className="text-lg font-bold text-gray-900">
-                ${product.price}
+                {new Intl.NumberFormat("vi-VN").format(product.price)}
               </span>
             </div>
           </div>

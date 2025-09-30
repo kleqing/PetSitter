@@ -229,9 +229,19 @@ export default function ServicesPage() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm text-gray-500">From</p>
-                          <p className="text-lg font-bold text-orange-500">${service.pricePerPerson}</p>
-                          <p className="text-sm text-gray-500">per person</p>
+                          {service.pricePerPerson === undefined || service.pricePerPerson === null || service.pricePerPerson === 0 ? (
+                            <>
+                              <p className="text-sm text-gray-500">Please</p>
+                              <p className="text-sm font-bold text-orange-500">contact with shop</p>
+                              <p className="text-sm text-gray-500">for the service price</p>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-sm text-gray-500">From</p>
+                              <p className="text-lg font-bold text-orange-500">{new Intl.NumberFormat("vi-VN").format(service.pricePerPerson)}</p>
+                              <p className="text-sm text-gray-500">per person</p>
+                            </>
+                          )}
                         </div>
                       </div>
 

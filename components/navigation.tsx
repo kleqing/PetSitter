@@ -127,7 +127,7 @@ export function Navigation() {
                       Profile
                     </Link>
                   </DropdownMenuItem>
-                  {user.role === UserRole.Shop && (
+                  {user.role === "shop" && (
                     <>
                       <DropdownMenuItem asChild>
                         <Link href="/dashboard" className="flex items-center">

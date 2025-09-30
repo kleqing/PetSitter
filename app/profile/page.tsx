@@ -223,10 +223,10 @@ export default function ProfilePage() {
                   <CardTitle className="text-2xl">{formData.fullName}</CardTitle>
                   <CardDescription className="text-lg">{formData.email}</CardDescription>
                   <Badge
-                    variant={(authUser?.role || storedUser?.role) === UserRole.Shop ? "default" : "secondary"}
+                    variant={(authUser?.role || storedUser?.role) === "shop" ? "default" : "secondary"}
                     className="mt-2"
                   >
-                    {(authUser?.role || storedUser?.role) === UserRole.Shop ? "Shop Owner" : "Regular User"}
+                    {(authUser?.role || storedUser?.role) === "shop" ? "Shop Owner" : "Regular User"}
                   </Badge>
                 </div>
               </div>
@@ -350,9 +350,9 @@ export default function ProfilePage() {
                       <Label>Account Type</Label>
                       <div className="p-2 bg-gray-50 rounded">
                         <Badge
-                          variant={(authUser?.role || storedUser?.role) === UserRole.Shop ? "default" : "secondary"}
+                          variant={(authUser?.role || storedUser?.role) === "shop" ? "default" : "secondary"}
                         >
-                          {(authUser?.role || storedUser?.role) === UserRole.Shop ? "Shop Owner" : "Regular User"}
+                          {(authUser?.role || storedUser?.role) === "shop" ? "Shop Owner" : "Regular User"}
                         </Badge>
                       </div>
                     </div>
@@ -453,7 +453,7 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
 
-              {(authUser?.role || storedUser?.role) === UserRole.Shop && (
+              {(authUser?.role || storedUser?.role) === "shop" && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Shop Owner Tools</CardTitle>
