@@ -20,6 +20,14 @@ export default function BlogPostPage() {
   const [error, setError] = useState<string | null>(null);
   const [hasLiked, setHasLiked] = useState<boolean>(false);
 
+  const formatContent = (text: string) => {
+    if (!text) return "";
+    return text
+      .split(/\n{2,}/)
+      .map((para) => `<p>${para.trim()}</p>`)
+      .join("");
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -141,7 +149,7 @@ export default function BlogPostPage() {
 
                 <div
                   className="prose prose-lg max-w-none mb-8"
-                  dangerouslySetInnerHTML={{ __html: post.content }}
+                  dangerouslySetInnerHTML={{ __html: formatContent(post.content) }}
                 />
 
                 <div className="mb-8">

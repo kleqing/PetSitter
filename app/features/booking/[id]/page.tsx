@@ -20,6 +20,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import router from "next/router";
 
 function WriteReviewDialog({ serviceId, onReviewAdded }: { serviceId: string, onReviewAdded: (review: any) => void }) {
   const [open, setOpen] = useState(false)
@@ -51,7 +52,7 @@ function WriteReviewDialog({ serviceId, onReviewAdded }: { serviceId: string, on
         setOpen(false)
         setComment("")
         setRating(0)
-        router.refresh();
+        router.reload();
       } else {
         alert(result.message || "Failed to submit review")
       }
@@ -294,7 +295,6 @@ export default function BookingPage() {
                   <h3 className="font-semibold text-lg mb-2">Talk & Greet</h3>
                   <p className="text-sm text-gray-600 mb-4">Get to know each other first</p>
                   <Button className="w-full bg-purple-500 hover:bg-purple-600 mb-2">Contact</Button>
-                  <Badge className="bg-green-400 text-green-900">FREE</Badge>
                 </CardContent>
               </Card>
 
@@ -302,11 +302,23 @@ export default function BookingPage() {
               <Card className="bg-orange-100">
                 <CardContent className="p-6 text-center">
                   <h3 className="font-semibold text-lg mb-2">{service.serviceName}</h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    From ${service.pricePerPerson}
-                  </p>
-                  <Link href={`/features/booking/${service.serviceId}`}>
-                    <Button className="w-full bg-orange-500 hover:bg-orange-600 mb-2">Make Reservation</Button>
+                  {service.pricePerPerson === 0 ? (
+                    <>
+                      <p className="text-sm text-gray-500">Please contact the shop for the service price</p>
+                      <br  />
+                    </>
+                  )
+                  : (
+                    <p className="text-3xl font-bold text-orange-600 mb-2">
+                      ${service.pricePerPerson
+                        .toFixed(2)
+                        .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                    </p>
+                  )}
+                  <Link href={service.shop?.socialMediaLinks || "#"} target="_blank">
+                    <Button className="w-full bg-orange-500 hover:bg-orange-600 mb-2">
+                      Shop profile
+                    </Button>
                   </Link>
                 </CardContent>
               </Card>
