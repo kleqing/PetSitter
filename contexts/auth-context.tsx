@@ -8,6 +8,7 @@ import { UserRole } from "@/enum/UserRole";
 
 interface AuthContextType {
   user: User | null;
+  setUser: (user: User | null) => void;
   token: string | null; 
   register: (data: any) => Promise<any>;
   login: (email: string, password: string) => Promise<any>;
@@ -16,9 +17,9 @@ interface AuthContextType {
   loading: boolean;
 }
 
-const mapRole = (r: number | string): UserRole => {
-  if (r === 2 || r === "2") return UserRole.Shop;
-  return UserRole.User;
+const mapRole = (r: number | string): "user" | "shop" => {
+  if (r === 2 || r === "2") return "shop";
+  return "user";
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -110,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
+        setUser,
         token,
         register,
         login,
