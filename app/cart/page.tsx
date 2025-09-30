@@ -55,11 +55,12 @@ export default function CartPage() {
                   <img src={item.productImageUrl} alt={item.productName} className="w-24 h-24 object-cover rounded-md mr-4" />
                   <div className="flex-grow">
                     <h2 className="font-semibold text-lg">{item.productName}</h2>
-                    <p className="text-gray-600">${item.price.toFixed(2)}</p>
+
+                    <p className="text-gray-600">{new Intl.NumberFormat("vi-VN").format(item.price)}</p>
                     <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-lg">${(item.price * item.quantity).toFixed(2)}</p>
+                    <p className="font-bold text-lg">{new Intl.NumberFormat("vi-VN").format(item.price * item.quantity)}</p>
                     <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700"
                     onClick={() => handleRemove(item)}>
                       <Trash2 className="w-5 h-5" />
@@ -74,7 +75,7 @@ export default function CartPage() {
               <h2 className="text-xl font-bold mb-4">Order Summary</h2>
               <div className="flex justify-between mb-2">
                 <span>Subtotal</span>
-                <span>${total.toFixed(2)}</span>
+                <span>{new Intl.NumberFormat("vi-VN").format(total)}</span>
               </div>
               <div className="flex justify-between mb-4">
                 <span>Shipping</span>
@@ -82,7 +83,7 @@ export default function CartPage() {
               </div>
               <div className="border-t pt-4 flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span>${total.toFixed(2)}</span>
+                <span>{new Intl.NumberFormat("vi-VN").format(total)}</span>
               </div>
               <Button className="w-full mt-6">
                 <Link href="/checkout">Proceed to Checkout</Link>

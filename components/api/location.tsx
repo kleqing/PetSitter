@@ -17,7 +17,7 @@ export const useCountries = () => {
     useEffect(() => {
         const fetchCountries = async () => {
         try {
-            const response = await fetch("https://localhost:7277/api/location/countries");
+            const response = await fetch("https://petsitter.runasp.net/api/location/countries");
             if (!response.ok) throw new Error("Failed to fetch countries");
             const data = await response.json();
             const countryList = data.map((item: any) => ({
@@ -47,7 +47,7 @@ export const useStates = (countryCode: string) => {
             return;
         }
         try {
-            const response = await fetch(`https://localhost:7277/api/location/states/${countryCode}`);
+            const response = await fetch(`https://petsitter.runasp.net/api/location/states/${countryCode}`);
             if (!response.ok) throw new Error("Failed to fetch states");
             const data = await response.json();
             const stateList = data.map((item: any) => ({
