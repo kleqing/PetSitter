@@ -2,7 +2,7 @@
 import { User } from "@/types/user";
 
 export const updateProfile = async (userId: string, data: { fullName: string; phoneNumber: string; email: string; dateOfBirth: string; address: string }) => {
-    const response = await fetch(`https://petsitter.runasp.net/api/user/update-profile`, {
+    const response = await fetch(`https://localhost:7277/api/user/update-profile`, {
         method: "PUT",
         headers: {
         "Content-Type": "application/json-patch+json",
@@ -19,7 +19,7 @@ export const updateProfile = async (userId: string, data: { fullName: string; ph
 };
 
 export const changePassword = async (userId: string, data: { oldPassword: string; newPassword: string; confirmPassword: string }) => {
-    const response = await fetch(`https://petsitter.runasp.net/api/user/change-password`, {
+    const response = await fetch(`https://localhost:7277/api/user/change-password`, {
         method: "PUT",
         headers: {
         "Content-Type": "application/json-patch+json",
