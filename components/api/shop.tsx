@@ -6,7 +6,7 @@ export const getShopByUserId = async (
 ): Promise<ApiResponse<any>> => {
     try {
         const response = await fetch(
-            `https://localhost:7277/api/shop/${userId}/shop`,
+            `https://petsitter.runasp.net/api/shop/${userId}/shop`,
             {
                 method: "GET",
                 headers: {
@@ -30,7 +30,7 @@ export const getShopByUserId = async (
 
 export const getProductsByShopId = async (shopId: string): Promise<ApiResponse<Product[]>> => {
     try {
-        const response = await fetch(`https://localhost:7277/api/shop/${shopId}/products`, {
+        const response = await fetch(`https://petsitter.runasp.net/api/shop/${shopId}/products`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -82,7 +82,7 @@ export const getProductCountByShopId = async (
 ): Promise<ApiResponse<number>> => {
     try {
         const response = await fetch(
-            `https://localhost:7277/api/shop/${shopId}/products/count`,
+            `https://petsitter.runasp.net/api/shop/${shopId}/products/count`,
             {
                 method: "GET",
                 headers: {
@@ -109,7 +109,7 @@ export const getOrderCountByShopId = async (
 ): Promise<ApiResponse<number>> => {
     try {
         const response = await fetch(
-            `https://localhost:7277/api/shop/${shopId}/orders/count`,
+            `https://petsitter.runasp.net/api/shop/${shopId}/orders/count`,
             {
                 method: "GET",
                 headers: {
@@ -137,7 +137,7 @@ export const addProduct = async (
 ): Promise<ApiResponse<Product>> => {
     try {
         const response = await fetch(
-            `https://localhost:7277/api/shop/${shopId}/products`,
+            `https://petsitter.runasp.net/api/shop/${shopId}/products`,
             {
                 method: "POST",
                 body: product,
@@ -190,7 +190,7 @@ export const updateProduct = async (
 ): Promise<ApiResponse<Product>> => {
     try {
         const response = await fetch(
-            `https://localhost:7277/api/shop/${shopId}/products/${productId}`,
+            `https://petsitter.runasp.net/api/shop/${shopId}/products/${productId}`,
             {
                 method: "PUT",
                 body: product,
@@ -240,7 +240,7 @@ export const updateProduct = async (
 export const getProductTags = async (): Promise<ApiResponse<any[]>> => {
     try {
         const response = await fetch(
-            `https://localhost:7277/api/filter/product-tags`,
+            `https://petsitter.runasp.net/api/filter/product-tags`,
             {
                 method: "GET",
                 headers: {
@@ -272,7 +272,7 @@ export const getProductTags = async (): Promise<ApiResponse<any[]>> => {
 export const getProductBrands = async (): Promise<ApiResponse<any[]>> => {
     try {
         const response = await fetch(
-            `https://localhost:7277/api/filter/product-brands`,
+            `https://petsitter.runasp.net/api/filter/product-brands`,
             {
                 method: "GET",
                 headers: {
@@ -304,7 +304,7 @@ export const getProductBrands = async (): Promise<ApiResponse<any[]>> => {
 export const getProductCategories = async (): Promise<ApiResponse<any[]>> => {
     try {
         const response = await fetch(
-            `https://localhost:7277/api/filter/product-categories`,
+            `https://petsitter.runasp.net/api/filter/product-categories`,
             {
                 method: "GET",
                 headers: {

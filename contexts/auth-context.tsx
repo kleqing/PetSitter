@@ -8,6 +8,7 @@ import { UserRole } from "@/enum/UserRole";
 
 interface AuthContextType {
   user: User | null;
+  setUser: (user: User | null) => void;
   token: string | null; 
   register: (data: any) => Promise<any>;
   login: (email: string, password: string) => Promise<any>;
@@ -111,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
+        setUser,
         token,
         register,
         login,
