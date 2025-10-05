@@ -17,7 +17,7 @@ interface AuthContextType {
 }
 
 const mapRole = (r: number | string): UserRole => {
-  if (r === 2 || r === "2") return UserRole.Shop;
+  if (r === 2) return UserRole.Shop;
   return UserRole.User;
 };
 
@@ -31,8 +31,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     const storedToken = localStorage.getItem("token");
-    if (storedUser) {
+    if (storedUser && storedToken) {
       setUser(JSON.parse(storedUser));
+      setToken(storedToken);
     }
   }, []);
 

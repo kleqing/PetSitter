@@ -1,15 +1,16 @@
-export interface User {
-  userId: string; 
-  fullName: string;
-  email: string;
-  role: "user" | "shop";
-  phoneNumber?: string;
-  dateOfBirth?: string;
-  address?: string;
-  profilePictureUrl?: string;
-  createdAt: string;
-}
+import type { UserRole } from "@/enum/UserRole"
 
+export interface User {
+  userId: string
+  fullName: string
+  email: string
+  role: UserRole
+  phoneNumber?: string
+  dateOfBirth?: string
+  address?: string
+  profilePictureUrl?: string
+  createdAt: string
+}
 export interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;

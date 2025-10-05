@@ -30,7 +30,7 @@ export default function PaymentSuccessPage() {
         </p>
         <div className="flex justify-center gap-4">
           <Button asChild>
-            <Link href="/shop">Continue Shopping</Link>
+            <Link href="/shop">Continue Shopping</Link>// not done yet
           </Button>
           <Button variant="outline" asChild>
             <Link href="/dashboard/orders">View My Orders</Link>

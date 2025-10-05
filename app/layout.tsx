@@ -6,6 +6,7 @@ import "./globals.css"
 import { AuthProvider } from "@/contexts/auth-context"
 import { CartProvider } from "@/contexts/cart-context"
 import { Toaster } from "sonner"
+import { ChatProvider } from "@/contexts/chat-context"
 
 export const metadata: Metadata = {
   title: "PetSitter",
@@ -32,8 +33,10 @@ html {
       <body>
         <AuthProvider>
           <CartProvider>
-          {children}
-          <Toaster position="top-right" richColors />
+          <ChatProvider> 
+              {children}
+              <Toaster position="top-right" richColors />
+            </ChatProvider>
         </CartProvider>
         </AuthProvider>
       </body>
