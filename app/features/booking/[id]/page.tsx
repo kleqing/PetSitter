@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Service } from "@/types/feature"; // Đảm bảo import type từ types/feature.ts
 import { useAuth } from "@/contexts/auth-context";
+import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -105,9 +106,12 @@ function WriteReviewDialog({ serviceId, onReviewAdded }: { serviceId: string, on
 export default function BookingPage() {
   const params = useParams();
   const serviceId = params.id as string;
+  const { user} = useAuth();
   const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isContacting, setIsContacting] = useState(false); // Thêm state cho nút contact
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchServiceDetail = async () => {
@@ -130,6 +134,18 @@ export default function BookingPage() {
     };
     fetchServiceDetail();
   }, [serviceId]);
+
+const handleContact = () => {
+    if (!user) {
+      toast.error("Please log in to start a conversation.");
+      router.push("/login");
+      return;
+    }
+    if (!service || !service.shop) return;
+      
+      // Điều hướng đến trang chat với ID của conversation
+      router.push(`/chat?new=${service.shop.shopId}`);
+  };
 
   if (loading) return (
     <>
@@ -294,7 +310,8 @@ export default function BookingPage() {
                 <CardContent className="p-6 text-center">
                   <h3 className="font-semibold text-lg mb-2">Talk & Greet</h3>
                   <p className="text-sm text-gray-600 mb-4">Get to know each other first</p>
-                  <Button className="w-full bg-purple-500 hover:bg-purple-600 mb-2">Contact</Button>
+                  <Button className="w-full bg-purple-500 hover:bg-purple-600 mb-2"
+                    onClick={handleContact}>Contact</Button>
                 </CardContent>
               </Card>
 
