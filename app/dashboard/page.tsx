@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { Plus, Edit, Trash2, Package, DollarSign, ShoppingBag, ArrowLeft, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,19 +25,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Plus,
-  Edit,
-  Trash2,
-  Package,
-  DollarSign,
-  ShoppingBag,
-  ArrowLeft,
-} from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { Product, ProductFilters } from "@/types/product";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { UserRole } from "@/enum/UserRole";
 import {
   getShopByUserId,
   getProductsByShopId,
@@ -46,14 +39,16 @@ import {
   getProductBrands,
   getProductCategories,
 } from "@/components/api/shop";
+import ProductForm from "@/components/ProductForm";
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
 
-  const [shopId, setShopId] = useState<string | null>(null);
+  const [shopId, setShopId] = useState<string>("");
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [search, setSearch] = useState("");
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalRevenue: 0,
@@ -61,51 +56,22 @@ export default function DashboardPage() {
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
-  const [form, setForm] = useState<{
-    shopId: string;
-    productName: string;
-    description: string;
-    price: number;
-    stockQuantity: number;
-    categoryId: string;
-    brandId: string;
-    tagId: string;
-    imageUrl?: File | null;
-  }>({
-    shopId: "",
-    productName: "",
-    description: "",
-    price: 0,
-    stockQuantity: 0,
-    categoryId: "",
-    brandId: "",
-    tagId: "",
-    imageUrl: null,
-  });
   const [tags, setTags] = useState<{ productTagId: string; productTagName: string }[]>([]);
   const [brands, setBrands] = useState<{ brandId: string; brandName: string }[]>([]);
   const [categories, setCategories] = useState<{ categoryId: string; categoryName: string }[]>([]);
-  const [filters, setFilters] = useState<ProductFilters>({
-    categories: [],
-    brands: [],
-    tags: [],
-    priceRange: [0, Infinity],
-    sortBy: "latest",
-  });
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Redirect if not shop owner
-  if (!user || user.role !== "shop") {
+  if (!user || user.role !== UserRole.Shop) {
     router.push("/");
     return null;
   }
 
-  // Load shop + stats + products + tags + brands + categories
+  // Fetch all data
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-
       const shopRes = await getShopByUserId(user.userId);
       if (!shopRes.success || !shopRes.data) {
         setError("Failed to load shop");
@@ -115,7 +81,6 @@ export default function DashboardPage() {
 
       const sid = shopRes.data.shopId;
       setShopId(sid);
-      setForm((prev) => ({ ...prev, shopId: sid }));
 
       const [prodRes, countRes, orderRes, tagsRes, brandsRes, categoriesRes] =
         await Promise.all([
@@ -148,400 +113,154 @@ export default function DashboardPage() {
     fetchData();
   }, [user.userId]);
 
-  // Filters
   useEffect(() => {
-    let result = [...products];
-    if (filters.categories.length)
-      result = result.filter((p) =>
-        filters.categories.includes(p.categoryName)
-      );
-    if (filters.brands.length)
-      result = result.filter((p) => filters.brands.includes(p.brandName));
-    if (filters.tags.length)
-      result = result.filter((p) =>
-        p.tags.some((tag) => filters.tags.includes(tag))
-      );
-    result = result.filter(
-      (p) =>
-        p.price >= filters.priceRange[0] && p.price <= filters.priceRange[1]
+    const filtered = products.filter((p) =>
+      p.productName.toLowerCase().includes(search.toLowerCase())
     );
-
-    switch (filters.sortBy) {
-      case "price-low":
-        result.sort((a, b) => a.price - b.price);
-        break;
-      case "price-high":
-        result.sort((a, b) => b.price - a.price);
-        break;
-      case "rating":
-        result.sort((a, b) => b.rating - a.rating);
-        break;
-      default:
-        result.sort(
-          (a, b) =>
-            new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
-        );
-    }
-
-    setFilteredProducts(result);
-  }, [products, filters]);
-
-  // Handle form input changes
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: name === "price" || name === "stockQuantity" ? Number(value) : value,
-    }));
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    setForm((prev) => ({ ...prev, imageUrl: file || null }));
-  };
-
-  const handleSelectChange = (name: string, value: string) => {
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // Initialize form when editing
-  useEffect(() => {
-    if (editing && shopId) {
-      setForm({
-        shopId: shopId,
-        productName: editing.productName,
-        description: editing.description,
-        price: editing.price,
-        stockQuantity: editing.stockQuantity || 0,
-        categoryId: editing.categoryId || "",
-        brandId: editing.brandId || "",
-        tagId: editing.tagId || "", // Updated to handle optional tagId
-        imageUrl: null,
-      });
-    } else if (shopId) {
-      setForm({
-        shopId: shopId,
-        productName: "",
-        description: "",
-        price: 0,
-        stockQuantity: 0,
-        categoryId: "",
-        brandId: "",
-        tagId: "",
-        imageUrl: null,
-      });
-    }
-  }, [editing, shopId]);
-
-  // CRUD handlers
-  const handleSubmit = async () => {
-    if (!shopId) {
-      setError("Shop ID is missing");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("ShopId", form.shopId);
-    formData.append("ProductName", form.productName);
-    formData.append("Description", form.description);
-    formData.append("Price", form.price.toString());
-    formData.append("StockQuantity", form.stockQuantity.toString());
-    formData.append("CategoryId", form.categoryId);
-    formData.append("BrandId", form.brandId);
-    formData.append("TagId", form.tagId);
-    if (form.imageUrl) {
-      formData.append("ImageUrl", form.imageUrl);
-    }
-
-    let res;
-    if (editing) {
-      res = await updateProduct(shopId, editing.productId, formData);
-    } else {
-      res = await addProduct(shopId, formData);
-    }
-
-    if (res.success && res.data) {
-      if (editing) {
-        setProducts((prev) =>
-          prev.map((p) => (p.productId === editing.productId ? res.data! : p))
-        );
-      } else {
-        setProducts((prev) => [...prev, res.data!]);
-      }
-      setIsDialogOpen(false);
-      setEditing(null);
-      setForm({
-        shopId: shopId,
-        productName: "",
-        description: "",
-        price: 0,
-        stockQuantity: 0,
-        categoryId: "",
-        brandId: "",
-        tagId: "",
-        imageUrl: null,
-      });
-      setError(null);
-    } else {
-      setError(res.message);
-    }
-  };
+    setFilteredProducts(filtered);
+  }, [search, products]);
 
   if (loading)
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex h-screen items-center justify-center text-gray-600">
         Loading...
       </div>
     );
 
   return (
     <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-6">Shop Dashboard</h1>
-
-      {error && <p className="text-red-500 mb-4">{error}</p>}
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold">Shop Dashboard</h1>
+          <p className="text-gray-500">Manage your shop and products easily</p>
+        </div>
+        <Button variant="ghost" onClick={() => router.push("/shop")}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Shop
+        </Button>
+      </div>
 
       {/* Stats */}
       <div className="grid md:grid-cols-3 gap-4 mb-8">
-        <StatCard
-          title="Products"
-          value={stats.totalProducts}
-          icon={<Package />}
-        />
+        <StatCard title="Products" value={stats.totalProducts} icon={<Package />} />
         <StatCard
           title="Revenue"
-          value={`$${stats.totalRevenue.toFixed(2)}`}
+          value={`${stats.totalRevenue.toFixed(3)} vnđ`}
           icon={<DollarSign />}
         />
-        <StatCard
-          title="Orders"
-          value={stats.totalOrders}
-          icon={<ShoppingBag />}
-        />
+        <StatCard title="Orders" value={stats.totalOrders} icon={<ShoppingBag />} />
       </div>
 
       {/* Tabs */}
       <Tabs defaultValue="products">
+        <TabsList className="mb-4">
+          <TabsTrigger value="products">Products</TabsTrigger>
+          <TabsTrigger value="orders">Orders</TabsTrigger>
+        </TabsList>
 
         {/* Products */}
         <TabsContent value="products">
-          <div className="flex justify-between mb-4">
-            <Button variant="ghost" className="mb-4" onClick={() => router.push("/shop")}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Shop
-            </Button>
+          <div className="flex justify-between items-center mb-4">
+            <div className="relative w-full max-w-xs">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search product..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-8"
+              />
+            </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{editing ? "Edit" : "Add"} Product</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-6">
-                  <div>
-                    <Label htmlFor="productName" className="mb-2">Product Name</Label>
-                    <Input
-                      id="productName"
-                      name="productName"
-                      value={form.productName}
-                      onChange={handleInputChange}
-                      placeholder="Enter product name"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="description" className="mb-2">Description</Label>
-                    <Textarea
-                      id="description"
-                      name="description"
-                      value={form.description}
-                      onChange={handleInputChange}
-                      placeholder="Enter product description"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="price" className="mb-2">Price</Label>
-                    <Input
-                      id="price"
-                      name="price"
-                      type="number"
-                      value={form.price}
-                      onChange={handleInputChange}
-                      placeholder="Enter price"
-                      min="0"
-                      step="0.01"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="stockQuantity" className="mb-2">Stock Quantity</Label>
-                    <Input
-                      id="stockQuantity"
-                      name="stockQuantity"
-                      type="number"
-                      value={form.stockQuantity}
-                      onChange={handleInputChange}
-                      placeholder="Enter stock quantity"
-                      min="0"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="categoryId" className="mb-2">Category</Label>
-                    <Select
-                      name="categoryId"
-                      value={form.categoryId}
-                      onValueChange={(value) =>
-                        handleSelectChange("categoryId", value)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem
-                            key={category.categoryId}
-                            value={category.categoryId}
-                          >
-                            {category.categoryName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="brandId" className="mb-2">Brand</Label>
-                    <Select
-                      name="brandId"
-                      value={form.brandId}
-                      onValueChange={(value) =>
-                        handleSelectChange("brandId", value)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a brand" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {brands.map((brand) => (
-                          <SelectItem
-                            key={brand.brandId}
-                            value={brand.brandId}
-                          >
-                            {brand.brandName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="tagId" className="mb-2">Tag</Label>
-                    <Select
-                      name="tagId"
-                      value={form.tagId}
-                      onValueChange={(value) =>
-                        handleSelectChange("tagId", value)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a tag" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {tags.map((tag) => (
-                          <SelectItem
-                            key={tag.productTagId}
-                            value={tag.productTagId}
-                          >
-                            {tag.productTagName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="imageUrl" className="mb-2">Product Image</Label>
-                    <Input
-                      id="imageUrl"
-                      name="imageUrl"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                    />
-                  </div>
-                </div>
-                <Button onClick={handleSubmit} className="w-full mt-4">
-                  {editing ? "Update" : "Add"}
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" /> Add Product
                 </Button>
+              </DialogTrigger>
+              <DialogContent className="max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>{editing ? "Edit Product" : "Add New Product"}</DialogTitle>
+                </DialogHeader>
+                <ProductForm
+                  editing={editing}
+                  setEditing={setEditing}
+                  shopId={shopId}
+                  tags={tags}
+                  brands={brands}
+                  categories={categories}
+                  onSuccess={(p) => {
+                    setProducts((prev) =>
+                      editing
+                        ? prev.map((x) => (x.productId === p.productId ? p : x))
+                        : [...prev, p]
+                    );
+                    setIsDialogOpen(false);
+                  }}
+                />
               </DialogContent>
             </Dialog>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredProducts.map((p) => (
-              <Card key={p.productId}>
-                <div className="relative h-40">
-                  <Image
-                    src={p.productImageUrl || "/placeholder.png"}
-                    alt={p.productName}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <CardContent>
-                  <h3 className="font-semibold">{p.productName}</h3>
-                  <p className="text-orange-600 font-bold">${p.price}</p>
-                  <div className="flex flex-wrap items-center gap-2 mt-2">
-                    <Badge>{p.categoryName}</Badge>
-                    <Badge variant="outline">{p.brandName}</Badge>
-                    {p.tags.map((t, i) => (
-                      <Badge key={i} variant="secondary">
-                        {t}
-                      </Badge>
-                    ))}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="ml-auto"
-                      onClick={() => {
-                        setEditing(p);
-                        setIsDialogOpen(true);
-                      }}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
+          {filteredProducts.length === 0 ? (
+            <div className="text-center text-gray-500 py-8">No products found</div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {filteredProducts.map((p) => (
+                <Card key={p.productId} className="group hover:shadow-lg transition">
+                  <div className="relative h-40">
+                    <Image
+                      src={p.productImageUrl || "/placeholder.png"}
+                      alt={p.productName}
+                      fill
+                      className="object-cover rounded-t-lg"
+                    />
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-semibold line-clamp-1">{p.productName}</h3>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => {
+                          setEditing(p);
+                          setIsDialogOpen(true);
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <p className="text-orange-600 font-bold mt-1">
+                      {p.price.toLocaleString("vi-VN")} ₫
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      <Badge>{p.categoryName}</Badge>
+                      <Badge variant="outline">{p.brandName}</Badge>
+                      {p.tags.map((t, i) => (
+                        <Badge key={i} variant="secondary">{t}</Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
-        {/* Orders */}
         <TabsContent value="orders">
-          <p>No orders yet.</p>
+          <div className="text-center text-gray-500 py-10">No orders yet.</div>
         </TabsContent>
       </Tabs>
     </div>
   );
 }
 
-function StatCard({
-  title,
-  value,
-  icon,
-}: {
-  title: string;
-  value: any;
-  icon: React.ReactNode;
-}) {
+function StatCard({ title, value, icon }: { title: string; value: any; icon: React.ReactNode }) {
   return (
-    <Card>
-      <CardContent className="flex items-center justify-between p-4">
+    <Card className="hover:shadow-md transition">
+      <CardContent className="flex items-center justify-between p-5">
         <div>
-          <p className="text-gray-500">{title}</p>
-          <p className="text-xl font-bold">{value}</p>
+          <p className="text-gray-500 text-sm">{title}</p>
+          <p className="text-2xl font-bold">{value}</p>
         </div>
         {icon}
       </CardContent>

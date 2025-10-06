@@ -3,11 +3,11 @@ import type { Service, ServiceTag } from "@/types/feature";
 export async function getListServices(): Promise<{ services: Service[]; tags: ServiceTag[] }> {
     try {
         const [serviceRes, tagRes] = await Promise.all([
-            fetch("https://petsitter.runasp.net/api/service/list-services", {
+            fetch("https://localhost:7277/api/service/list-services", {
                 method: "GET",
                 headers: { "Content-Type": "application/json" },
             }),
-            fetch("https://petsitter.runasp.net/api/filter/service-tags", {
+            fetch("https://localhost:7277/api/filter/service-tags", {
                 method: "GET",
                 headers: { "Content-Type": "application/json" },
             }),

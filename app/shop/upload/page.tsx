@@ -27,6 +27,7 @@ import {
   addProduct,
 } from "@/components/api/shop";
 import { Product } from "@/types/product"; // Assuming this is defined in product.ts
+import { UserRole } from "@/enum/UserRole";
 
 export default function UploadProductPage() {
   const { user } = useAuth();
@@ -51,7 +52,7 @@ export default function UploadProductPage() {
   const [error, setError] = useState("");
 
   // Redirect if not shop owner
-  if (!user || user.role !== "shop") {
+  if (!user || user.role !== UserRole.Shop) {
     return (
       <>
         <Navigation />

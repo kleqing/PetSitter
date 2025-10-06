@@ -5,6 +5,7 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 import * as api from "@/components/api/auth";
 import type { User } from "@/types/user";
 import { UserRole } from "@/enum/UserRole";
+import { useRouter } from 'next/navigation'   // Import useRouter from next/navigation  
 
 interface AuthContextType {
   user: User | null;
@@ -28,6 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -106,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     localStorage.removeItem("user");
     localStorage.removeItem("token");
+    router.push('/login');
   };
 
   return (

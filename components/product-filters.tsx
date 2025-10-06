@@ -142,7 +142,7 @@ export default function ProductFiltersComponent({
           />
           <div className="flex items-center justify-between text-sm">
             <span>
-              Price: ${filters.priceRange[0]} - ${filters.priceRange[1]}
+              Price: {new Intl.NumberFormat("vi-VN").format(filters.priceRange[0])} - {new Intl.NumberFormat("vi-VN").format(filters.priceRange[1])}
             </span>
           </div>
         </CardContent>

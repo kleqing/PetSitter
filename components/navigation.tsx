@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Heart, ShoppingCart, User, LogOut, Settings, Phone, Package } from "lucide-react"
+import { Heart, ShoppingCart, User, LogOut, Settings, Phone, Package, MessageCircleMore } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { UserRole } from "@/enum/UserRole"
 
@@ -127,7 +127,13 @@ export function Navigation() {
                       Profile
                     </Link>
                   </DropdownMenuItem>
-                  {user.role === "shop" && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/chat" className="flex items-center">
+                      <MessageCircleMore className="mr-2 h-4 w-4" />
+                      Messages
+                    </Link>
+                  </DropdownMenuItem>
+                  {user.role === UserRole.Shop && (
                     <>
                       <DropdownMenuItem asChild>
                         <Link href="/dashboard" className="flex items-center">

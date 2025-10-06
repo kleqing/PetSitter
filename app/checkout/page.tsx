@@ -54,7 +54,7 @@ export default function CheckoutPage() {
     // app/checkout/page.tsx -> trong hàm handlePlaceOrder
 
 try {
-  const response = await fetch("https://petsitter.runasp.net/api/orders/checkout", { 
+  const response = await fetch("https://localhost:7277/api/orders/checkout", { 
     method: 'POST',
     headers: { 
       'Content-Type': 'application/json', 

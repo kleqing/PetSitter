@@ -34,7 +34,7 @@ function WriteReviewDialog({ serviceId, onReviewAdded }: { serviceId: string, on
     if (!user) return alert("Please login first")
     setLoading(true)
     try {
-      const res = await fetch("https://petsitter.runasp.net/api/service/write-review", {
+      const res = await fetch("https://localhost:7277/api/service/write-review", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -117,7 +117,7 @@ export default function BookingPage() {
     const fetchServiceDetail = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`https://petsitter.runasp.net/api/service/service/${serviceId}`, {
+        const res = await fetch(`https://localhost:7277/api/service/service/${serviceId}`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
