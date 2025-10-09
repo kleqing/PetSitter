@@ -21,8 +21,8 @@ export async function listProducts(): Promise<Product[]> {
 
     const result = await res.json();
     const items = result?.data ?? [];
-    console.log(items);
 
+    console.log("Fetched products:", items);
     return items.map((item: any): Product => ({
         productId: item.productId,
         productName: item.productName,

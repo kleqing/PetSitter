@@ -40,7 +40,6 @@ export default function BlogPostPage() {
         setHasLiked(liked);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
-        console.error("Fetch error:", err);
       } finally {
         setLoading(false);
       }
@@ -63,7 +62,6 @@ export default function BlogPostPage() {
         description: newHasLiked ? "You liked the post" : "You unliked the post",
       });
     } catch (err) {
-      console.error("Error toggling like:", err);
       toast({ title: "Error", description: "Failed to toggle like", variant: "destructive" });
     } finally {
       setLoading(false);

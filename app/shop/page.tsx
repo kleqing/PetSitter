@@ -39,7 +39,6 @@ export default function ShopPage() {
         setCurrentPage(1);
       })
       .catch((err) => {
-        console.error("Failed to load products", err);
         setError(err.message || "Failed to load products");
       })
       .finally(() => setLoading(false));

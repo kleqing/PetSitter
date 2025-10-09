@@ -31,7 +31,6 @@ export default function BlogPage() {
         setBlogs(blogData);
         setTags(tagData);
       } catch (err) {
-        console.error("Error fetching data:", err);
       } finally {
         setLoading(false);
       }

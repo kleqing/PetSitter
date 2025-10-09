@@ -19,7 +19,6 @@ export const getShopByUserId = async (
         }
         return await response.json();
     } catch (error) {
-        console.error("Error fetching shop by user ID:", error);
         return {
             success: false,
             message: "Failed to fetch shop data",
@@ -67,7 +66,6 @@ export const getProductsByShopId = async (shopId: string): Promise<ApiResponse<P
         }
         return result;
     } catch (error) {
-        console.error("Error fetching products by shop ID:", error);
         return {
             success: false,
             message: "Failed to fetch products",
@@ -95,7 +93,6 @@ export const getProductCountByShopId = async (
         }
         return await response.json();
     } catch (error) {
-        console.error("Error fetching product count:", error);
         return {
             success: false,
             message: "Failed to fetch product count",
@@ -122,7 +119,6 @@ export const getOrderCountByShopId = async (
         }
         return await response.json();
     } catch (error) {
-        console.error("Error fetching order count:", error);
         return {
             success: false,
             message: "Failed to fetch order count",
@@ -174,7 +170,6 @@ export const addProduct = async (
         }
         return result;
     } catch (error) {
-        console.error("Error adding product:", error);
         return {
             success: false,
             message: "Failed to add product",
@@ -227,7 +222,6 @@ export const updateProduct = async (
         }
         return result;
     } catch (error) {
-        console.error("Error updating product:", error);
         return {
             success: false,
             message: "Failed to update product",
@@ -259,7 +253,6 @@ export const getProductTags = async (): Promise<ApiResponse<any[]>> => {
             data: result.data || [],
         };
     } catch (error) {
-        console.error("Error fetching product tags:", error);
         return {
             success: false,
             message: "Failed to fetch product tags",
@@ -291,7 +284,6 @@ export const getProductBrands = async (): Promise<ApiResponse<any[]>> => {
             data: result.data || [],
         };
     } catch (error) {
-        console.error("Error fetching product brands:", error);
         return {
             success: false,
             message: "Failed to fetch product brands",
@@ -323,7 +315,6 @@ export const getProductCategories = async (): Promise<ApiResponse<any[]>> => {
             data: result.data || [],
         };
     } catch (error) {
-        console.error("Error fetching product categories:", error);
         return {
             success: false,
             message: "Failed to fetch product categories",

@@ -15,9 +15,7 @@ export default class ChatService {
   async start() {
     try {
       await this.connection.start()
-      console.log("SignalR Connected")
     } catch (err) {
-      console.error("SignalR Connection Error: ", err)
     }
   }
 

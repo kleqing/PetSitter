@@ -74,7 +74,6 @@ export function CreateBlogModal({
             onClose();
             router.push("/blog"); // ✅ redirect về trang /blog
         } catch (err) {
-            console.error(err);
             alert("Failed to create blog");
         } finally {
             setLoading(false);

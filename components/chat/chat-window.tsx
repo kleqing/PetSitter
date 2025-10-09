@@ -55,7 +55,7 @@ export function ChatWindow({ conversation, onBack }: ChatWindowProps) {
     .then(() => {
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "auto" }), 50);
     })
-    .catch(error => console.error("Error fetching message history:", error))
+    .catch()
     .finally(() => setIsLoading(false));
   }, [conversation.conversationId, token]);
 
@@ -67,7 +67,6 @@ export function ChatWindow({ conversation, onBack }: ChatWindowProps) {
       try {
         await joinConversation(conversation.conversationId);
       } catch (err) {
-        console.error("SignalR connection or join error:", err);
       }
     };
     
@@ -130,7 +129,6 @@ export function ChatWindow({ conversation, onBack }: ChatWindowProps) {
         // Notify that typing has stopped
         userStoppedTyping(conversation.conversationId);
     } catch (err) {
-        console.error("Failed to send message", err);
     }
 };
 

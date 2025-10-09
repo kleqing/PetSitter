@@ -48,7 +48,6 @@ export default function ProductFiltersComponent({
             setTags(tgs);
         })
         .catch((err) => {
-            console.error("Failed to load filters", err);
         });
 }, []);
   

@@ -23,7 +23,6 @@ export default function CheckoutPage() {
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const handlePlaceOrder = async () => {
-    console.log("Token value when button is clicked:", token);
     if (!user) {
       toast.error("Please log in to place an order.");
       router.push("/login");

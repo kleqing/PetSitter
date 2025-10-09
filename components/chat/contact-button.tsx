@@ -49,11 +49,8 @@ export function ContactButton({ shopId, serviceId, serviceName, shopName, classN
         // Redirect to chat page with the conversation
         router.push(`/chat?conversation=${conversationId}`)
       } else {
-        console.error("Failed to create conversation")
       }
-    } catch (error) {
-      console.error("Error creating conversation:", error)
-    } finally {
+    } catch (error) {    } finally {
       setIsLoading(false)
     }
   }

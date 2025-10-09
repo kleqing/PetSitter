@@ -25,7 +25,6 @@ export default function CreateBlogPage() {
                 setTags(tagData);
                 setCategories(categoryData);
             } catch (err) {
-                console.error("Error fetching tags/categories:", err);
             }
         };
         fetchData();
@@ -39,7 +38,6 @@ export default function CreateBlogPage() {
                 tags={tags}
                 categories={categories}
                 onCreated={() => {
-                    console.log("Blog created!");
                 }}
             />
         </div>

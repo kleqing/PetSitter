@@ -135,10 +135,8 @@ export default function ProfilePage() {
       setIsEditing(false);
       setError(null);
       setSuccess("Profile updated successfully");
-      console.log("[v0] Profile updated successfully:", response);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred while saving profile");
-      console.error("Error saving profile:", err);
     }
   };
 
@@ -167,10 +165,8 @@ export default function ProfilePage() {
       setIsChangingPassword(false);
       setError(null);
       setSuccess("Password changed successfully");
-      console.log("[v0] Password changed successfully:", response);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred while changing password");
-      console.error("Error changing password:", err);
     }
   };
 

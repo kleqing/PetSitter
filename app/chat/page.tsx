@@ -18,7 +18,6 @@ const transformApiDataToConversation = (apiData: any[], currentUserId: string | 
   if (!Array.isArray(apiData) || !currentUserId) return [];
   const mappedConversations = apiData.map(conv => {
     if (!conv || !conv.petOwner || !conv.shop || !conv.shop.user) {
-      console.warn("Skipping malformed conversation object:", conv);
       return null; 
     }
     // XỬ LÝ lastMessageAt MỘT CÁCH AN TOÀN
@@ -119,7 +118,6 @@ export default function ChatPage() {
         setSelectedConversation(conversationToSelect);
       }
     } catch (err) {
-      console.error(err);
     } finally {
       setIsLoading(false);
     }

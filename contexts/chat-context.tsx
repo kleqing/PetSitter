@@ -34,8 +34,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setConnection(newConnection);
     // Start the connection
       newConnection.start()
-        .then(() => console.log("SignalR Connected via Context"))
-        .catch(err => console.error("SignalR Connection Error:", err));
+        .then()
+        .catch();
         
       // Cleanup on component unmount
       return () => {
@@ -49,7 +49,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       try {
         await connection.invoke("SendMessage", conversationId, content);
       } catch (err) {
-        console.error("Error sending message:", err);
       }
     }
   }, [connection]);
@@ -60,7 +59,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       try {
         await connection.invoke("JoinConversation", conversationId);
       } catch (err) {
-        console.error("Error joining conversation:", err);
       }
     }
   }, [connection]);
@@ -70,7 +68,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       try {
         await connection.invoke("LeaveConversation", conversationId); // Giả sử bạn có hàm này ở Hub
       } catch (err) {
-        console.error("Error leaving conversation:", err);
       }
     }
   }, [connection]);

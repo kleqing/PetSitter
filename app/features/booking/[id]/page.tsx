@@ -58,7 +58,6 @@ function WriteReviewDialog({ serviceId, onReviewAdded }: { serviceId: string, on
         alert(result.message || "Failed to submit review")
       }
     } catch (err) {
-      console.error(err)
       alert("Error submitting review")
     } finally {
       setLoading(false)
@@ -123,11 +122,9 @@ export default function BookingPage() {
         });
         if (!res.ok) throw new Error("Failed to fetch service details");
         const result = await res.json();
-        console.log("Fetched service data:", result.data); // Debug dữ liệu
         setService(result.data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
-        console.error("Fetch error:", err);
       } finally {
         setLoading(false);
       }

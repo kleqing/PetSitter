@@ -15,7 +15,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const averageRating =
     reviewCount > 0
       ? product.reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount
-      : 0
+      : product.rating ?? 0
 
   const toggleFavorite = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -59,8 +59,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 ))}
               </div>
               <span className="text-sm text-gray-500 ml-2">
-                {averageRating.toFixed(1)} ★ ({reviewCount} review
-                {reviewCount !== 1 ? "s" : ""})
+                {averageRating.toFixed(1)} ★
               </span>
             </div>
 

@@ -29,7 +29,6 @@ export async function getListServices(): Promise<{ services: Service[]; tags: Se
 
         return { services, tags };
     } catch (err) {
-        console.error("Error fetching data:", err);
         throw err;
     }
 }

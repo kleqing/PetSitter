@@ -43,7 +43,6 @@ export function ContactChatButton({ shopOwnerId, shopName, className }: ContactC
         router.push(`/chat?conversation=${result.data.conversationId}`)
       }
     } catch (error) {
-      console.error("Failed to start chat:", error)
     } finally {
       setLoading(false)
     }

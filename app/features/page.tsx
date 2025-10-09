@@ -39,7 +39,6 @@ export default function ServicesPage() {
       setLoading(true);
       try {
         const { services, tags } = await getListServices();
-        console.log("Fetched services:", services.map(s => ({ serviceId: s.serviceId, serviceImageUrl: s.serviceImageUrl }))); // Debug
         setServices(services);
         setTags(tags);
 
@@ -47,7 +46,6 @@ export default function ServicesPage() {
         const uniqueLocations = [...new Set(services.map((s) => s.shop?.location).filter((loc): loc is string => loc !== undefined))];
         setLocations(uniqueLocations);
       } catch (err) {
-        console.error("Error fetching:", err);
       } finally {
         setLoading(false);
       }
