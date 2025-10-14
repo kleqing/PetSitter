@@ -46,7 +46,7 @@ export function ChatWindow({ conversation, onBack }: ChatWindowProps) {
     if (!token || !conversation.conversationId) return;
       setIsLoading(true);
         // 1. Fetch message history
-        fetch(`https://localhost:7277/api/chat/conversations/${conversation.conversationId}/messages`, {
+        fetch(`https://petsitter.runasp.net/api/chat/conversations/${conversation.conversationId}/messages`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then(res => res.ok ? res.json() : Promise.reject(new Error("Failed to fetch history")))

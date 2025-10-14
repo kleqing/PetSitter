@@ -78,7 +78,7 @@ export default function ChatPage() {
   const initializePage = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("https://localhost:7277/api/chat/conversations", {
+      const response = await fetch("https://petsitter.runasp.net/api/chat/conversations", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error("Failed to fetch conversations");
@@ -101,7 +101,7 @@ export default function ChatPage() {
         if (existing) {
           conversationToSelect = existing;
         } else {
-          const createRes = await fetch(`https://localhost:7277/api/chat/conversations`, {
+          const createRes = await fetch(`https://petsitter.runasp.net/api/chat/conversations`, {
             method: "POST",
             headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
             body: JSON.stringify({ shopId: newShopId }),

@@ -25,7 +25,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (token) { // Chỉ tạo connection nếu chưa có
       const newConnection = new signalR.HubConnectionBuilder()
-        .withUrl("https://localhost:7277/chathub", {
+        .withUrl("https://petsitter.runasp.net/chathub", {
           accessTokenFactory: () => token
         })
         .withAutomaticReconnect()

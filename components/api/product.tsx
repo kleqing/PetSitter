@@ -9,7 +9,7 @@ function safeImage(url: any) {
 }
 
 export async function listProducts(): Promise<Product[]> {
-    const res = await fetch("https://localhost:7277/api/product/list-products", {
+    const res = await fetch("https://petsitter.runasp.net/api/product/list-products", {
         method: "GET",
         headers: { "Content-Type": "application/json" },
         cache: "no-store",
@@ -42,7 +42,7 @@ export async function listProducts(): Promise<Product[]> {
 }
 
 export async function getProductById(id: string): Promise<Product> {
-    const res = await fetch(`https://localhost:7277/api/product/product/${id}`, {
+    const res = await fetch(`https://petsitter.runasp.net/api/product/product/${id}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
     });
@@ -72,7 +72,7 @@ export async function getProductById(id: string): Promise<Product> {
 }
 
 export async function getRelatedProduct(id: string): Promise<Product[]> {
-    const res = await fetch(`https://localhost:7277/api/product/related-products/${id}`, {
+    const res = await fetch(`https://petsitter.runasp.net/api/product/related-products/${id}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" }
     });
@@ -102,7 +102,7 @@ export async function getRelatedProduct(id: string): Promise<Product[]> {
 }
 
 export async function productReview(productId: string): Promise<Review[]> {
-    const res = await fetch(`https://localhost:7277/api/product/reviews/${productId}`, {
+    const res = await fetch(`https://petsitter.runasp.net/api/product/reviews/${productId}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" }
     })
@@ -132,7 +132,7 @@ export async function writeProductReview(review: {
     context: string
     rating: number
 }) {
-    const res = await fetch("https://localhost:7277/api/product/write-review", {
+    const res = await fetch("https://petsitter.runasp.net/api/product/write-review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(review),

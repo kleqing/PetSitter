@@ -5,7 +5,7 @@ export default class ChatService {
 
   constructor(token: string) {
     this.connection = new signalR.HubConnectionBuilder()
-      .withUrl("https://localhost:7277/chatHub", {
+      .withUrl("https://petsitter.runasp.net/chatHub", {
         accessTokenFactory: () => token,
       })
       .withAutomaticReconnect()

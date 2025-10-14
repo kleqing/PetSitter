@@ -26,7 +26,7 @@ export function ContactChatButton({ shopOwnerId, shopName, className }: ContactC
     setLoading(true)
     try {
       // Create or get existing conversation
-      const response = await fetch("https://localhost:7277/api/chat/conversations", {
+      const response = await fetch("https://petsitter.runasp.net/api/chat/conversations", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
