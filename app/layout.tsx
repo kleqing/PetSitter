@@ -8,38 +8,41 @@ import { CartProvider } from "@/contexts/cart-context"
 import { Toaster } from "sonner"
 import { ChatProvider } from "@/contexts/chat-context"
 
+import { Analytics } from "@vercel/analytics/next"
+
 export const metadata: Metadata = {
-  title: "PetSitter",
-  description: "Created with PetSitter",
-  generator: "PetSitter",
+    title: "PetSitter",
+    description: "Created with PetSitter",
+    generator: "PetSitter",
 }
 
 export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
+                                       children,
+                                   }: Readonly<{
+    children: React.ReactNode
 }>) {
-  return (
-    <html lang="en">
-      <head>
-        <style>{`
+    return (
+        <html lang="en">
+        <head>
+            <style>{`
 html {
   font-family: ${GeistSans.style.fontFamily};
   --font-sans: ${GeistSans.variable};
   --font-mono: ${GeistMono.variable};
 }
         `}</style>
-      </head>
-      <body>
+        </head>
+        <body>
         <AuthProvider>
-          <CartProvider>
-          <ChatProvider> 
-              {children}
-              <Toaster position="top-right" richColors />
-            </ChatProvider>
-        </CartProvider>
+            <CartProvider>
+                <ChatProvider>
+                    {children}
+                    <Toaster position="top-right" richColors />
+                    <Analytics />
+                </ChatProvider>
+            </CartProvider>
         </AuthProvider>
-      </body>
-    </html>
-  )
+        </body>
+        </html>
+    )
 }
