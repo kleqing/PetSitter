@@ -70,7 +70,7 @@ export default function ContactPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 mb-2">Call us for immediate assistance</p>
-                <p className="font-semibold text-lg">(000) 000-0000</p>
+                <p className="font-semibold text-lg">0901 135 618</p>
                 <p className="text-sm text-gray-500">Mon-Fri: 8AM-8PM, Sat-Sun: 9AM-6PM</p>
               </CardContent>
             </Card>
@@ -84,7 +84,7 @@ export default function ContactPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 mb-2">Send us an email anytime</p>
-                <p className="font-semibold">info@petsitter.com</p>
+                <p className="font-semibold">petsitter@gmail.com</p>
                 <p className="text-sm text-gray-500">We'll respond within 24 hours</p>
               </CardContent>
             </Card>
@@ -98,9 +98,9 @@ export default function ContactPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 mb-2">Visit our office</p>
-                <p className="font-semibold">123 Pet Care Street</p>
-                <p className="font-semibold">Pet City, PC 12345</p>
-                <p className="text-sm text-gray-500">United States</p>
+                <p className="font-semibold">FPT University</p>
+                <p className="font-semibold">Ngu Hanh Son, Da Nang</p>
+                <p className="text-sm text-gray-500">Vietnam</p>
               </CardContent>
             </Card>
 

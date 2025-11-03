@@ -6,7 +6,7 @@ export const getShopByUserId = async (
 ): Promise<ApiResponse<any>> => {
     try {
         const response = await fetch(
-            `https://petsitter.runasp.net/api/shop/${userId}/shop`,
+            `https://localhost:7277/api/shop/${userId}/shop`,
             {
                 method: "GET",
                 headers: {
@@ -29,7 +29,7 @@ export const getShopByUserId = async (
 
 export const getProductsByShopId = async (shopId: string): Promise<ApiResponse<Product[]>> => {
     try {
-        const response = await fetch(`https://petsitter.runasp.net/api/shop/${shopId}/products`, {
+        const response = await fetch(`https://localhost:7277/api/shop/${shopId}/products`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -80,7 +80,7 @@ export const getProductCountByShopId = async (
 ): Promise<ApiResponse<number>> => {
     try {
         const response = await fetch(
-            `https://petsitter.runasp.net/api/shop/${shopId}/products/count`,
+            `https://localhost:7277/api/shop/${shopId}/products/count`,
             {
                 method: "GET",
                 headers: {
@@ -106,7 +106,7 @@ export const getOrderCountByShopId = async (
 ): Promise<ApiResponse<number>> => {
     try {
         const response = await fetch(
-            `https://petsitter.runasp.net/api/shop/${shopId}/orders/count`,
+            `https://localhost:7277/api/shop/${shopId}/orders/count`,
             {
                 method: "GET",
                 headers: {
@@ -133,7 +133,7 @@ export const addProduct = async (
 ): Promise<ApiResponse<Product>> => {
     try {
         const response = await fetch(
-            `https://petsitter.runasp.net/api/shop/${shopId}/products`,
+            `https://localhost:7277/api/shop/${shopId}/products`,
             {
                 method: "POST",
                 body: product,
@@ -185,7 +185,7 @@ export const updateProduct = async (
 ): Promise<ApiResponse<Product>> => {
     try {
         const response = await fetch(
-            `https://petsitter.runasp.net/api/shop/${shopId}/products/${productId}`,
+            `https://localhost:7277/api/shop/${shopId}/products/${productId}`,
             {
                 method: "PUT",
                 body: product,
@@ -234,7 +234,7 @@ export const updateProduct = async (
 export const getProductTags = async (): Promise<ApiResponse<any[]>> => {
     try {
         const response = await fetch(
-            `https://petsitter.runasp.net/api/filter/product-tags`,
+            `https://localhost:7277/api/filter/product-tags`,
             {
                 method: "GET",
                 headers: {
@@ -265,7 +265,7 @@ export const getProductTags = async (): Promise<ApiResponse<any[]>> => {
 export const getProductBrands = async (): Promise<ApiResponse<any[]>> => {
     try {
         const response = await fetch(
-            `https://petsitter.runasp.net/api/filter/product-brands`,
+            `https://localhost:7277/api/filter/product-brands`,
             {
                 method: "GET",
                 headers: {
@@ -296,7 +296,7 @@ export const getProductBrands = async (): Promise<ApiResponse<any[]>> => {
 export const getProductCategories = async (): Promise<ApiResponse<any[]>> => {
     try {
         const response = await fetch(
-            `https://petsitter.runasp.net/api/filter/product-categories`,
+            `https://localhost:7277/api/filter/product-categories`,
             {
                 method: "GET",
                 headers: {
@@ -322,3 +322,19 @@ export const getProductCategories = async (): Promise<ApiResponse<any[]>> => {
         };
     }
 };
+
+const API_BASE = "https://localhost:7277/api/shop";
+
+export async function getShopRevenue(shopId: string) {
+    const res = await fetch(`${API_BASE}/${shopId}/orders/revenue`, {
+        credentials: "include",
+    });
+    return res.json();
+}
+
+export async function getTotalSoldProducts(shopId: string) {
+    const res = await fetch(`${API_BASE}/${shopId}/products/total-sold`, {
+        credentials: "include",
+    });
+    return res.json();
+}

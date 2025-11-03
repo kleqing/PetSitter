@@ -1,21 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Plus, Edit, Trash2, Package, DollarSign, ShoppingBag, ArrowLeft, Search } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Package,
+  DollarSign,
+  ShoppingBag,
+  ArrowLeft,
+  Search,
+  Download,
+  Filter,
+  Star,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -24,246 +27,664 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/auth-context";
-import { Product, ProductFilters } from "@/types/product";
+import { Product } from "@/types/product";
 import { UserRole } from "@/enum/UserRole";
 import {
-  getShopByUserId,
-  getProductsByShopId,
-  getProductCountByShopId,
-  getOrderCountByShopId,
-  addProduct,
-  updateProduct,
-  getProductTags,
-  getProductBrands,
-  getProductCategories,
+    getShopByUserId,
+    getProductsByShopId,
+    getProductCountByShopId,
+    getOrderCountByShopId,
+    getProductTags,
+    getProductBrands,
+    getProductCategories, getShopRevenue, getTotalSoldProducts,
 } from "@/components/api/shop";
 import ProductForm from "@/components/ProductForm";
+
+// charts
+import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Bar } from "recharts";
+
+// Types
+type TagObj = { productTagId: string; productTagName: string };
+type BrandObj = { brandId: string; brandName: string };
+type CategoryObj = { categoryId: string; categoryName: string };
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
 
-  const [shopId, setShopId] = useState<string>("");
+  const [shopId, setShopId] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
-  const [stats, setStats] = useState({
-    totalProducts: 0,
-    totalRevenue: 0,
-    totalOrders: 0,
-  });
+  const [stats, setStats] = useState({ totalProducts: 0, totalRevenue: 0, totalSold: 0 });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
-  const [tags, setTags] = useState<{ productTagId: string; productTagName: string }[]>([]);
-  const [brands, setBrands] = useState<{ brandId: string; brandName: string }[]>([]);
-  const [categories, setCategories] = useState<{ categoryId: string; categoryName: string }[]>([]);
+  const [tags, setTags] = useState<TagObj[]>([]);
+  const [brands, setBrands] = useState<BrandObj[]>([]);
+  const [categories, setCategories] = useState<CategoryObj[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<string>("latest");
+  const [showGuidelines, setShowGuidelines] = useState(false);
 
-  // Redirect if not shop owner
-  if (!user || user.role !== UserRole.Shop) {
-    router.push("/");
-    return null;
-  }
+  // --- THAY ĐỔI: Thêm state cho filter ---
+  const [filterState, setFilterState] = useState({
+    quickFilter: "all", // 'all', 'available', 'low_stock', 'price_gt_500k'
+    brand: null as string | null, // Tên thương hiệu đang được lọc
+  });
+  // ----------------------------------------
 
-  // Fetch all data
+  // ... (useEffect cho 'guard' và 'fetch all data' giữ nguyên)
+  // guard
   useEffect(() => {
+    if (!user) return;
+    if (user.role !== UserRole.Shop) {
+      if (typeof window !== "undefined") router.push("/");
+    }
+  }, [user, router]);
+
+  // fetch all data
+  useEffect(() => {
+    if (!user) return;
+
+    let mounted = true;
     const fetchData = async () => {
       setLoading(true);
-      const shopRes = await getShopByUserId(user.userId);
-      if (!shopRes.success || !shopRes.data) {
-        setError("Failed to load shop");
-        setLoading(false);
-        return;
-      }
+      try {
+        const shopRes = await getShopByUserId(user.userId);
+        if (!shopRes.success || !shopRes.data) {
+          throw new Error("Failed to load shop");
+        }
+        const sid = shopRes.data.shopId;
+        if (!mounted) return;
+        setShopId(sid);
 
-      const sid = shopRes.data.shopId;
-      setShopId(sid);
-
-      const [prodRes, countRes, orderRes, tagsRes, brandsRes, categoriesRes] =
-        await Promise.all([
+        const [prodRes, countRes, orderRes, tagsRes, brandsRes, categoriesRes, revenueRes, soldRes,] = await Promise.all([
           getProductsByShopId(sid),
           getProductCountByShopId(sid),
           getOrderCountByShopId(sid),
           getProductTags(),
           getProductBrands(),
           getProductCategories(),
+          getShopRevenue(sid),
+          getTotalSoldProducts(sid),
         ]);
 
-      if (prodRes.success && prodRes.data) {
-        setProducts(prodRes.data);
-        setFilteredProducts(prodRes.data);
-        setStats((s) => ({
-          ...s,
-          totalRevenue: (orderRes.data || 0) * 100, // Adjust as needed
-        }));
+        if (prodRes.success && prodRes.data) {
+          setProducts(prodRes.data);
+          // Không setFilteredProducts ở đây, để useEffect filter chính xử lý
+        }
+
+          const newStats = {
+              totalProducts: countRes.success ? countRes.data || 0 : 0,
+              totalSold: soldRes.success ? soldRes.data || 0 : 0,
+              totalRevenue: revenueRes.success ? revenueRes.data || 0 : 0,
+          };
+          setStats(newStats);
+
+        if (tagsRes.success) setTags(tagsRes.data || []);
+        if (brandsRes.success) setBrands(brandsRes.data || []);
+        if (categoriesRes.success) setCategories(categoriesRes.data || []);
+
+      } catch (err: any) {
+        console.error(err);
+        if (mounted) setError(err.message || "Error fetching data");
+      } finally {
+        if (mounted) setLoading(false);
       }
-      if (countRes.success)
-        setStats((s) => ({ ...s, totalProducts: countRes.data || 0 }));
-      if (orderRes.success)
-        setStats((s) => ({ ...s, totalOrders: orderRes.data || 0 }));
-      if (tagsRes.success) setTags(tagsRes.data || []);
-      if (brandsRes.success) setBrands(brandsRes.data || []);
-      if (categoriesRes.success) setCategories(categoriesRes.data || []);
-
-      setLoading(false);
     };
+
     fetchData();
-  }, [user.userId]);
+    return () => {
+      mounted = false;
+    };
+  }, [user]);
 
+  // --- THAY ĐỔI: Gộp tất cả logic filter vào một useEffect ---
   useEffect(() => {
-    const filtered = products.filter((p) =>
-      p.productName.toLowerCase().includes(search.toLowerCase())
-    );
-    setFilteredProducts(filtered);
-  }, [search, products]);
+    const q = search.trim().toLowerCase();
+    let list = products.slice(); // Luôn bắt đầu từ danh sách gốc
 
-  if (loading)
-    return (
-      <div className="flex h-screen items-center justify-center text-gray-600">
-        Loading...
-      </div>
+    // 1. Filter theo Search
+    if (q) {
+      list = list.filter((p) =>
+        p.productName.toLowerCase().includes(q) ||
+        (p.tags || []).some(t => (typeof t === 'string' ? t : (t as TagObj).productTagName).toLowerCase().includes(q))
+      );
+    }
+
+    // 2. Filter theo Quick Filter
+    switch (filterState.quickFilter) {
+      case "available":
+        list = list.filter(p => p.availabilityStatus);
+        break;
+      case "low_stock":
+        list = list.filter(p => (p.stockQuantity ?? 0) <= 5);
+        break;
+      case "price_gt_500k":
+        list = list.filter(p => (p.price ?? 0) > 500000);
+        break;
+      case "all":
+      default:
+        // Không làm gì, giữ nguyên danh sách (đã lọc bởi search)
+        break;
+    }
+
+    // 3. Filter theo Brand
+    if (filterState.brand) {
+      list = list.filter(p => p.brandName === filterState.brand);
+    }
+
+    // 4. Sắp xếp (Sort)
+    switch (sortBy) {
+      case "price_asc":
+        list.sort((a, b) => (a.price ?? 0) - (a.price ?? 0));
+        break;
+      case "price_desc":
+        list.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+        break;
+      case "name":
+        list.sort((a, b) => a.productName.localeCompare(b.productName));
+        break;
+      case "rating":
+        list.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+        break;
+      default:
+        // 'latest': Giữ nguyên thứ tự
+        break;
+    }
+
+    setFilteredProducts(list);
+  }, [products, search, sortBy, filterState]); // Thêm filterState vào dependency
+  // ----------------------------------------------------
+
+  // ... (useCallback, useMemo giữ nguyên)
+  const formatCurrency = useCallback((n?: number) => (n ?? 0).toLocaleString("vi-VN") + " ₫", []);
+
+  const chartData = useMemo(() => {
+    const map = new Map<string, number>();
+    products.forEach((p) => {
+      const key = p.categoryName || "Uncategorized";
+      const stock = p.stockQuantity ?? 1;
+      const value = (p.price ?? 0) * stock;
+      map.set(key, (map.get(key) || 0) + value);
+    });
+    return Array.from(map.entries()).map(([k, v]) => ({ category: k, value: Math.round(v / 1000) }));
+  }, [products]);
+
+  const handleDelete = useCallback(async (id: string) => {
+    console.log("Deleting product:", id);
+    setProducts((prev) => prev.filter((p) => p.productId !== id));
+  }, []);
+
+  const downloadCSV = useCallback(() => {
+    const header = ["Product ID", "Name", "Price", "Category", "Brand", "Tags", "Image", "Stock", "Rating", "Availability"];
+    const rows = products.map((p) => [
+      p.productId,
+      p.productName,
+      p.price ?? 0,
+      p.categoryName ?? "",
+      p.brandName ?? "",
+      (p.tags || []).map(t => typeof t === 'string' ? t : (t as TagObj).productTagName).join("|") || "",
+      p.productImageUrl ?? "",
+      p.stockQuantity ?? 0,
+      p.rating ?? 0,
+      p.availabilityStatus ? "available" : "out_of_stock",
+    ]);
+
+    const csvContent = [header, ...rows]
+      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+      .join("\n"); 
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `products_${shopId || "shop"}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [products, shopId]);
+
+  const handleFormSuccess = useCallback((newProduct: Product) => {
+    setProducts((prev) =>
+      editing
+        ? prev.map((x) => (x.productId === newProduct.productId ? newProduct : x))
+        : [newProduct, ...prev]
     );
+    setIsDialogOpen(false);
+    setEditing(null);
+  }, [editing]);
+
+  const handleOpenDialog = (product: Product | null = null) => {
+    setEditing(product);
+    setIsDialogOpen(true);
+  };
+  
+  // --- THAY ĐỔI: Thêm handlers cho filter ---
+  const handleQuickFilterChange = (filter: string) => {
+    setFilterState({
+      quickFilter: filter, // Đặt quick filter mới
+      brand: null, // Reset brand filter khi chọn quick filter
+    });
+  };
+
+  const handleBrandFilterChange = (brandName: string) => {
+    setFilterState(prevState => ({
+      quickFilter: "all", // Reset quick filter khi chọn brand
+      // Nếu nhấn vào brand đang active thì tắt (null), ngược lại thì set brand mới
+      brand: prevState.brand === brandName ? null : brandName,
+    }));
+  };
+  // ----------------------------------------
+
+  if (loading) return <div className="flex h-screen items-center justify-center text-gray-600">Loading...</div>;
+  if (error) return <div className="p-8 text-red-600">{error}</div>;
 
   return (
     <div className="container mx-auto py-8">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">Shop Dashboard</h1>
-          <p className="text-gray-500">Manage your shop and products easily</p>
-        </div>
-        <Button variant="ghost" onClick={() => router.push("/shop")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Shop
-        </Button>
-      </div>
+      <DashboardHeader
+        onBack={() => router.push("/shop")}
+        onShowGuidelines={() => setShowGuidelines(true)}
+        onExportCSV={downloadCSV}
+      />
 
       {/* Stats */}
-      <div className="grid md:grid-cols-3 gap-4 mb-8">
-        <StatCard title="Products" value={stats.totalProducts} icon={<Package />} />
-        <StatCard
-          title="Revenue"
-          value={`${stats.totalRevenue.toFixed(3)} vnđ`}
-          icon={<DollarSign />}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        <StatCard 
+          title="Total Products"
+          value={stats.totalProducts || products.length} 
+          icon={<Package className="h-5 w-5 text-gray-500" />} 
         />
-        <StatCard title="Orders" value={stats.totalOrders} icon={<ShoppingBag />} />
+        <StatCard 
+          title="Revenue (est.)" 
+          value={formatCurrency(stats.totalRevenue)} 
+          icon={<DollarSign className="h-5 w-5 text-gray-500" />} 
+        />
+        <StatCard 
+          title="Total Sold"
+          value={stats.totalSold}
+          icon={<ShoppingBag className="h-5 w-5 text-gray-500" />} 
+        />
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="products">
-        <TabsList className="mb-4">
-          <TabsTrigger value="products">Products</TabsTrigger>
-          <TabsTrigger value="orders">Orders</TabsTrigger>
-        </TabsList>
+      <div className="grid lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          {/* Toolbar và Nút Add Product */}
+          <div className="flex items-center justify-between mb-4 gap-3">
+            <ProductToolbar
+              search={search}
+              onSearchChange={(e) => setSearch(e.target.value)}
+              onSortChange={(v) => setSortBy(v)}
+            />
 
-        {/* Products */}
-        <TabsContent value="products">
-          <div className="flex justify-between items-center mb-4">
-            <div className="relative w-full max-w-xs">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search product..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-8"
-              />
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2" onClick={() => handleOpenDialog()}>
+                    <Plus className="h-4 w-4" /> Add Product
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>{editing ? "Edit Product" : "Add New Product"}</DialogTitle>
+                  </DialogHeader>
+                  <ProductForm
+                    editing={editing}
+                    setEditing={setEditing} 
+                    shopId={shopId}
+                    tags={tags}
+                    brands={brands}
+                    categories={categories}
+                    onSuccess={handleFormSuccess}
+                  />
+                </DialogContent>
+              </Dialog>
             </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2">
-                  <Plus className="h-4 w-4" /> Add Product
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>{editing ? "Edit Product" : "Add New Product"}</DialogTitle>
-                </DialogHeader>
-                <ProductForm
-                  editing={editing}
-                  setEditing={setEditing}
-                  shopId={shopId}
-                  tags={tags}
-                  brands={brands}
-                  categories={categories}
-                  onSuccess={(p) => {
-                    setProducts((prev) =>
-                      editing
-                        ? prev.map((x) => (x.productId === p.productId ? p : x))
-                        : [...prev, p]
-                    );
-                    setIsDialogOpen(false);
-                  }}
-                />
-              </DialogContent>
-            </Dialog>
           </div>
 
+          {/* Product List */}
           {filteredProducts.length === 0 ? (
-            <div className="text-center text-gray-500 py-8">No products found</div>
+            <div className="text-center text-gray-500 py-8">No products found for your criteria.</div>
           ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {filteredProducts.map((p) => (
-                <Card key={p.productId} className="group hover:shadow-lg transition">
-                  <div className="relative h-40">
-                    <Image
-                      src={p.productImageUrl || "/placeholder.png"}
-                      alt={p.productName}
-                      fill
-                      className="object-cover rounded-t-lg"
-                    />
-                  </div>
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-center">
-                      <h3 className="font-semibold line-clamp-1">{p.productName}</h3>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => {
-                          setEditing(p);
-                          setIsDialogOpen(true);
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <p className="text-orange-600 font-bold mt-1">
-                      {p.price.toLocaleString("vi-VN")} ₫
-                    </p>
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      <Badge>{p.categoryName}</Badge>
-                      <Badge variant="outline">{p.brandName}</Badge>
-                      {p.tags.map((t, i) => (
-                        <Badge key={i} variant="secondary">{t}</Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                <ProductItemCard
+                  key={p.productId}
+                  product={p}
+                  formatCurrency={formatCurrency}
+                  onEdit={() => handleOpenDialog(p)}
+                  onDelete={() => handleDelete(p.productId)}
+                />
               ))}
             </div>
           )}
-        </TabsContent>
+        </div>
 
-        <TabsContent value="orders">
-          <div className="text-center text-gray-500 py-10">No orders yet.</div>
-        </TabsContent>
-      </Tabs>
+        {/* --- THAY ĐỔI: Truyền props mới cho Sidebar --- */}
+        <DashboardSidebar
+          chartData={chartData}
+          brands={brands}
+          // Props mới để quản lý state highlight
+          activeQuickFilter={filterState.quickFilter}
+          activeBrand={filterState.brand}
+          // Props mới là các hàm xử lý
+          onQuickFilterChange={handleQuickFilterChange}
+          onBrandFilterChange={handleBrandFilterChange}
+        />
+        {/* ------------------------------------------ */}
+      </div>
+
+      {/* Field Guide Dialog */}
+      <FieldGuideDialog
+        open={showGuidelines}
+        onOpenChange={setShowGuidelines}
+      />
     </div>
   );
 }
 
-function StatCard({ title, value, icon }: { title: string; value: any; icon: React.ReactNode }) {
-  return (
-    <Card className="hover:shadow-md transition">
-      <CardContent className="flex items-center justify-between p-5">
+// --- CÁC COMPONENT CON ---
+
+// 1. Dashboard Header
+const DashboardHeader = React.memo(({ onBack, onShowGuidelines, onExportCSV }: {
+  onBack: () => void;
+  onShowGuidelines: () => void;
+  onExportCSV: () => void;
+}) => (
+  <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+    <div>
+      <h1 className="text-3xl font-bold">Shop Dashboard</h1>
+      <p className="text-gray-500">Overview & product management — polished and intuitive</p>
+    </div>
+    <div className="flex items-center gap-3">
+      <Button variant="ghost" onClick={onBack}>
+        <ArrowLeft className="h-4 w-4 mr-2" /> Back
+      </Button>
+      <Button onClick={onShowGuidelines} variant="outline">
+        <Filter className="mr-2 h-4 w-4" /> Field Guide
+      </Button>
+      <Button onClick={onExportCSV} variant="ghost">
+        <Download className="mr-2 h-4 w-4" /> Export CSV
+      </Button>
+    </div>
+  </div>
+));
+DashboardHeader.displayName = "DashboardHeader";
+
+
+// 2. Stat Card (Component tái sử dụng)
+const StatCard = React.memo(({ title, value, icon }: {
+  title: string;
+  value: string | number;
+  icon: React.ReactNode;
+}) => (
+  <Card>
+    <CardContent className="pt-6"> 
+      <div className="flex items-center justify-between">
         <div>
-          <p className="text-gray-500 text-sm">{title}</p>
+          <p className="text-sm text-gray-500 mb-1">{title}</p>
           <p className="text-2xl font-bold">{value}</p>
         </div>
         {icon}
+      </div>
+    </CardContent>
+  </Card>
+));
+StatCard.displayName = "StatCard";
+
+
+// 3. Product Toolbar
+const ProductToolbar = React.memo(({ search, onSearchChange, onSortChange }: {
+  search: string;
+  onSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onSortChange: (value: string) => void;
+}) => (
+  <div className="flex items-center gap-2 w-full max-w-md">
+    <div className="relative w-full">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+      <Input placeholder="Search products or tags..." value={search} onChange={onSearchChange} className="pl-10" />
+    </div>
+    <Select onValueChange={onSortChange} defaultValue="latest">
+      <SelectTrigger className="w-40">
+        <SelectValue placeholder="Sort by" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="latest">Sort by: Latest</SelectItem>
+        <SelectItem value="name">Sort by: Name</SelectItem>
+        <SelectItem value="price_asc">Sort by: Price ↑</SelectItem>
+        <SelectItem value="price_desc">Sort by: Price ↓</SelectItem>
+        <SelectItem value="rating">Sort by: Rating</SelectItem>
+      </SelectContent>
+    </Select>
+  </div>
+));
+ProductToolbar.displayName = "ProductToolbar";
+
+
+// 4. Product Item Card
+const ProductItemCard = React.memo(({ product: p, formatCurrency, onEdit, onDelete }: {
+  product: Product;
+  formatCurrency: (n?: number) => string;
+  onEdit: () => void;
+  onDelete: () => void;
+}) => (
+  <Card className="group hover:shadow-lg transition-shadow relative overflow-hidden flex flex-col">
+    <div className="relative h-44 bg-gray-100">
+      <Image 
+        src={p.productImageUrl || "/placeholder.png"} 
+        alt={p.productName} 
+        fill 
+        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+        className="object-cover" 
+      />
+    </div>
+    <CardContent className="p-4 flex flex-col flex-grow">
+      <div className="flex justify-between items-start mb-2">
+        <div className="w-2/3 pr-2">
+          <h3 className="font-semibold line-clamp-2 text-sm" title={p.productName}>{p.productName}</h3>
+          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{p.description || "No description"}</p>
+        </div>
+        <div className="text-right flex-shrink-0">
+          <p className="text-orange-600 font-bold text-sm mt-1">{formatCurrency(p.price)}</p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 mt-auto pt-2">
+        <div className="flex items-center gap-1 text-sm">
+          <Star className="h-4 w-4 text-yellow-500" />
+          <span className="text-xs font-medium">{(p.rating ?? 0).toFixed(1)}</span>
+          <span className="text-xs text-gray-400">({p.reviews?.length ?? 0})</span>
+        </div>
+        {p.availabilityStatus ? (
+          <Badge variant="default" className="text-xs px-2 py-0.5">Available</Badge>
+        ) : (
+          <Badge variant="destructive" className="text-xs px-2 py-0.5">Out of stock</Badge>
+        )}
+        <div className="text-xs text-gray-500 ml-auto">Stock: {p.stockQuantity ?? "-"}</div>
+      </div>
+
+      <div className="flex flex-wrap gap-1 mt-3 border-t pt-3">
+        <Badge variant="outline" className="text-xs">{p.categoryName || "N/A"}</Badge>
+        <Badge variant="outline" className="text-xs">{p.brandName || "N/A"}</Badge>
+        {(p.tags || []).slice(0, 2).map((t, i) => (
+          <Badge key={i} variant="secondary" className="text-xs">
+            {typeof t === 'string' ? t : (t as TagObj).productTagName}
+          </Badge>
+        ))}
+      </div>
+      
+      <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button size="icon" variant="secondary" className="h-8 w-8" onClick={onEdit}>
+          <Edit className="h-4 w-4" />
+        </Button>
+        <Button size="icon" variant="destructive" className="h-8 w-8" onClick={onDelete}>
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </CardContent>
+  </Card>
+));
+ProductItemCard.displayName = "ProductItemCard";
+
+
+// --- THAY ĐỔI: Cập nhật DashboardSidebar ---
+const DashboardSidebar = React.memo(({ 
+  chartData, 
+  brands, 
+  activeQuickFilter, 
+  activeBrand, 
+  onQuickFilterChange, 
+  onBrandFilterChange 
+}: {
+  chartData: { category: string; value: number }[];
+  brands: BrandObj[];
+  activeQuickFilter: string;
+  activeBrand: string | null;
+  onQuickFilterChange: (filter: string) => void;
+  onBrandFilterChange: (brand: string) => void;
+}) => (
+  <div className="space-y-4 lg:sticky lg:top-8">
+    {/* Card Chart (giữ nguyên) */}
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Inventory Value by Category (k ₫)</CardTitle>
+      </CardHeader>
+      <CardContent style={{ height: 220 }}>
+        {chartData.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-gray-500 text-sm">Not enough data</div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+              <XAxis dataKey="category" hide />
+              <YAxis stroke="#888" fontSize={12} />
+              <Tooltip 
+                formatter={(value: number) => [`${value.toLocaleString()}k ₫`, "Value"]}
+                cursor={{ fill: 'transparent' }} 
+              />
+              <Bar dataKey="value" fill="#8884d8" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </CardContent>
     </Card>
-  );
-}
+    
+   {/* Card Quick Filters (cập nhật) */}
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Quick Filters</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-2">
+          <Button 
+            variant="ghost" // Giữ variant="ghost" làm nền
+            className={`
+              justify-start w-full
+              ${activeQuickFilter === 'available' 
+                ? 'bg-orange-400 text-white hover:bg-orange-500' // Lớp CSS khi Active
+                : 'hover:bg-orange-100' // Lớp CSS khi Inactive
+              }
+            `} 
+            onClick={() => onQuickFilterChange('available')}>
+            Available Products
+          </Button>
+          <Button 
+            variant="ghost"
+            className={`
+              justify-start w-full
+              ${activeQuickFilter === 'low_stock' 
+                ? 'bg-orange-400 text-white hover:bg-orange-500' // Active
+                : 'hover:bg-orange-100' // Inactive
+              }
+            `} 
+            onClick={() => onQuickFilterChange('low_stock')}>
+            Low Stock (≤5)
+          </Button>
+          <Button 
+            variant="ghost"
+            className={`
+              justify-start w-full
+              ${activeQuickFilter === 'price_gt_500k' 
+                ? 'bg-orange-400 text-white hover:bg-orange-500' // Active
+                : 'hover:bg-orange-100' // Inactive
+              }
+            `} 
+            onClick={() => onQuickFilterChange('price_gt_500k')}>
+            Price &gt; 500k
+          </Button>
+          <Button 
+            variant="ghost"
+            className={`
+              justify-start w-full font-semibold
+              ${activeQuickFilter === 'all' 
+                ? 'bg-orange-400 text-white hover:bg-orange-500' // Active
+                : 'hover:bg-orange-100' // Inactive
+              }
+            `} 
+            onClick={() => onQuickFilterChange('all')}>
+            Show All Products
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+    
+    {/* Card Brands (cập nhật) */}
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Filter by Brand</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-wrap gap-2">
+          {brands.length > 0 ? brands.map((b) => (
+            <Badge 
+              key={b.brandId} 
+              // Nếu brand đang active thì là 'default' (màu đậm), ngược lại là 'secondary'
+              variant={activeBrand === b.brandName ? 'default' : 'secondary'}
+              onClick={() => onBrandFilterChange(b.brandName)}
+              className="cursor-pointer"
+            >
+              {b.brandName}
+            </Badge>
+          )) : (
+            <p className="text-sm text-gray-500">No brands found.</p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+));
+DashboardSidebar.displayName = "DashboardSidebar";
+// ----------------------------------------
+
+
+// 6. Field Guide Dialog
+const FieldGuideDialog = React.memo(({ open, onOpenChange }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) => (
+  <Dialog open={open} onOpenChange={onOpenChange}>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Product Field Guide</DialogTitle>
+      </DialogHeader>
+      <div className="space-y-3 py-2 text-sm">
+        <p className="text-gray-600">Guidance for sellers on how to fill product information correctly.</p>
+        <ul className="list-disc pl-5 space-y-1.5 text-gray-700">
+          <li><strong>Name</strong>: Keep it short & descriptive. Include brand/model (e.g., "iPhone 15 Pro Max 256GB").</li>
+          <li><strong>Price</strong>: Enter the number in VND (e.g., 129000).</li>
+          <li><strong>Category / Brand</strong>: Pick the closest match for filtering and search.</li>
+          <li><strong>Images</strong>: Use clear, well-lit photos. Recommended: 800x800px or larger. The first image is the thumbnail.</li>
+          <li><strong>Description</strong>: A short summary (for cards) and optional long details (for the product page).</li>
+          <li><strong>Tags</strong>: Keywords to help search (e.g., "red", "leather", "size L").</li>
+          <li><strong>Stock</strong>: Total units available. Use 0 if out of stock.</li>
+          <li><strong>Availability</strong>: Toggle to show or hide the product from buyers.</li>
+        </ul>
+        <div className="text-right pt-2">
+          <Button onClick={() => onOpenChange(false)}>Close</Button>
+        </div>
+      </div>
+    </DialogContent>
+  </Dialog>
+));
+FieldGuideDialog.displayName = "FieldGuideDialog";
