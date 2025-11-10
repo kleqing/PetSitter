@@ -25,8 +25,8 @@ export function Navigation() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-sm">PS</span>
+            <div className="w-8 h-8 rounded-full flex items-center justify-center">
+              <img src="/logo.png" alt="Pet Sitter Logo" />
             </div>
             <span className="font-bold text-xl text-gray-900">Pet Sitter</span>
           </Link>
@@ -88,7 +88,7 @@ export function Navigation() {
             {/* Phone number */}
             <div className="hidden lg:flex items-center space-x-2 text-gray-600">
               <Phone className="h-4 w-4" />
-              <span className="text-sm">(+84) 123-456-789</span>
+              <span className="text-sm">(+84) 901-135-618</span>
             </div>
 
             {/* Cart */}
