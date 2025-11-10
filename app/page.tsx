@@ -32,7 +32,7 @@ export default function HomePage() {
                 help. We've built a trusted network of certified providers to make your life easier and your pet's life
                 happier.
               </p>
-              <Link href="/services">
+              <Link href="/features">
                 <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
                   Book Appointment
                 </Button>
@@ -50,7 +50,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900">Top Rated Services</h2>
-            <Link href="/services" className="text-blue-600 hover:text-blue-700 font-medium">
+            <Link href="/features" className="text-blue-600 hover:text-blue-700 font-medium">
               View All Services
             </Link>
           </div>
@@ -126,7 +126,7 @@ export default function HomePage() {
                   </div>
                 ))}
               </div>
-              <Link href="/services">
+              <Link href="/features">
                 <Button className="bg-blue-600 hover:bg-blue-700">Book Appointment</Button>
               </Link>
             </div>
@@ -170,7 +170,7 @@ export default function HomePage() {
             ))}
           </div>
 
-          <Link href="/services">
+          <Link href="/features">
             <Button className="mt-8 bg-blue-600 hover:bg-blue-700" size="lg">
               Book Appointment
             </Button>
@@ -188,7 +188,7 @@ export default function HomePage() {
                 Give your furry friend the exercise and socialization they need with our professional dog walking
                 services. Our experienced walkers ensure your pet gets the perfect amount of activity and attention.
               </p>
-              <Link href="/services">
+              <Link href="/features">
                 <Button className="bg-orange-500 hover:bg-orange-600">Learn More</Button>
               </Link>
             </div>
@@ -221,7 +221,7 @@ export default function HomePage() {
                   </div>
                 ))}
               </div>
-              <Link href="/services">
+              <Link href="/features">
                 <Button className="bg-orange-500 hover:bg-orange-600">Book Appointment</Button>
               </Link>
             </div>

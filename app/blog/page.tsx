@@ -183,7 +183,10 @@ function BlogFilters({
 }
 
 function BlogList({ posts }: { posts: Blog[] }) {
-  if (posts.length === 0) {
+
+    const formatContent = (html: string) => html || "";
+
+    if (posts.length === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500 text-lg">No blog posts found matching your criteria.</p>
@@ -232,7 +235,7 @@ function BlogList({ posts }: { posts: Blog[] }) {
                   <Link href={`/blog/${post.blogId}`}>{post.title}</Link>
                 </h2>
 
-                <p className="text-gray-600 mb-4 line-clamp-3">{post.content}</p>
+                <p className="text-gray-600 mb-4 line-clamp-3" dangerouslySetInnerHTML={{ __html: formatContent(post.content) }} />
               </div>
 
               <div className="flex items-center justify-between">

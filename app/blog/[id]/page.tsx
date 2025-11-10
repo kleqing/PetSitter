@@ -20,13 +20,7 @@ export default function BlogPostPage() {
   const [error, setError] = useState<string | null>(null);
   const [hasLiked, setHasLiked] = useState<boolean>(false);
 
-  const formatContent = (text: string) => {
-    if (!text) return "";
-    return text
-      .split(/\n{2,}/)
-      .map((para) => `<p>${para.trim()}</p>`)
-      .join("");
-  };
+  const formatContent = (html: string) => html || "";
 
   useEffect(() => {
     const fetchData = async () => {
