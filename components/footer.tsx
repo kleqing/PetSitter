@@ -47,7 +47,7 @@ export function Footer() {
             <h3 className="font-semibold text-lg mb-4">Social Media</h3>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="flex items-center text-blue-200 hover:text-white transition-colors">
+                <a href="https://www.facebook.com/fucapitalistcrew" className="flex items-center text-blue-200 hover:text-white transition-colors">
                   <Facebook className="w-4 h-4 mr-2" />
                   Facebook
                 </a>
@@ -68,12 +68,12 @@ export function Footer() {
               <li className="flex items-center text-blue-200">
                 <Phone className="w-4 h-4 mr-2" />
                 <div>
-                  <div>0123456789</div>
+                  <div>0901135618</div>
                 </div>
               </li>
               <li className="flex items-center text-blue-200">
                 <Mail className="w-4 h-4 mr-2" />
-                noreply@petsitter.com
+                petsitter@gmail.com
               </li>
               <li className="flex items-center text-blue-200">
                 <MapPin className="w-4 h-4 mr-2" />
@@ -85,10 +85,10 @@ export function Footer() {
 
         <div className="border-t border-blue-800 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
           <div className="text-blue-200 text-sm">
-            <Link href="/privacy" className="hover:text-white mr-4">
+            <Link href="#" className="hover:text-white mr-4">
               Privacy Policy
             </Link>
-            <Link href="/cookies" className="hover:text-white">
+            <Link href="#" className="hover:text-white">
               Cookies
             </Link>
           </div>
